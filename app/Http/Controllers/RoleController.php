@@ -19,6 +19,25 @@ class RoleController extends Controller
         return new RoleResource($role->load('permissions'));
     }
 
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|unique:roles,name',
+            'display_name' => 'nullable|string',
+            'description' => 'nullable|string',
+            'hierarchy_level' => 'nullable|integer'
+        ]);
+
+        $role = Role::create([
+            'name' => $validated['name'],
+            'display_name' => $validated['display_name'] ?? $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'hierarchy_level' => $validated['hierarchy_level'] ?? 0,
+        ]);
+
+        return response()->json($role, 201);
+    }
+
     public function syncPermissions(Request $request, Role $role)
     {
         $validated = $request->validate([

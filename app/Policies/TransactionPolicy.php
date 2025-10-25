@@ -9,11 +9,20 @@ class TransactionPolicy
 {
     public function viewAny(User $user): bool
     {
+        // Allow MD to view all transactions regardless of granular permissions
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director'])) {
+            return true;
+        }
+
         return $user->hasPermission('transactions.view', 'view');
     }
 
     public function view(User $user, Transaction $transaction): bool
     {
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director'])) {
+            return true;
+        }
+
         return $user->hasPermission('transactions.view', 'view');
     }
 

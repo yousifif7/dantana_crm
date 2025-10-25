@@ -46,9 +46,10 @@ class ProductionController extends Controller
         return response()->json($record, 201);
     }
 
-    public function show(ProductionRecord $productionRecord)
+    public function show($id)
     {
-        return response()->json($productionRecord->load(['creator', 'approver']));
+        $productionRecord = ProductionRecord::with(['creator', 'approver'])->find($id);
+        return response()->json($productionRecord);
     }
 
     public function update(Request $request, $id)

@@ -9,11 +9,19 @@ class InventoryPolicy
 {
     public function viewAny(User $user): bool
     {
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director'])) {
+            return true;
+        }
+
         return $user->hasPermission('inventory.view', 'view');
     }
 
     public function view(User $user, InventoryItem $item): bool
     {
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director'])) {
+            return true;
+        }
+
         return $user->hasPermission('inventory.view', 'view');
     }
 

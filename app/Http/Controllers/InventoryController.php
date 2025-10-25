@@ -59,8 +59,9 @@ class InventoryController extends Controller
         return response()->json($item->fresh(), 201);
     }
 
-    public function show(InventoryItem $inventoryItem)
+    public function show($id)
     {
+        $inventoryItem = InventoryItem::find($id);
         return response()->json($inventoryItem->load(['creator', 'movements.performer']));
     }
 

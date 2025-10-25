@@ -9,11 +9,19 @@ class ProductionPolicy
 {
     public function viewAny(User $user): bool
     {
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director'])) {
+            return true;
+        }
+
         return $user->hasPermission('production.view', 'view');
     }
 
     public function view(User $user, ProductionRecord $record): bool
     {
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director'])) {
+            return true;
+        }
+
         return $user->hasPermission('production.view', 'view');
     }
 

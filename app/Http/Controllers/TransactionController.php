@@ -42,13 +42,27 @@ class TransactionController extends Controller
 
         $transactions = $query->latest()->paginate(15);
 
+        /** @var \Illuminate\Pagination\LengthAwarePaginator $transactions */
         // Attach permission flags per transaction so the frontend can show/hide actions
-        $transactions->getCollection()->transform(function ($t) use ($request) {
-            $t->can_view = $request->user() ? $request->user()->can('view', $t) : false;
-            $t->can_update = $request->user() ? $request->user()->can('update', $t) : false;
-            $t->can_delete = $request->user() ? $request->user()->can('delete', $t) : false;
-            return $t;
-        });
+        $transactions->setCollection(
+            $transactions->getCollection()->map(function ($t) use ($request) {
+                $user = $request->user();
+                // If current user is MD (managing director), grant all actions.
+                $isMd = $user && isset($user->role) && (strtolower($user->role->name) === 'md' || strtolower($user->role->name) === 'managing_director');
+
+                if ($isMd) {
+                    $t->can_view = true;
+                    $t->can_update = true;
+                    $t->can_delete = true;
+                } else {
+                    $t->can_view = $user ? $user->can('view', $t) : false;
+                    $t->can_update = $user ? $user->can('update', $t) : false;
+                    $t->can_delete = $user ? $user->can('delete', $t) : false;
+                }
+
+                return $t;
+            })->values()
+        );
 
         $this->auditService->log($request->user(), 'viewed', 'finance', null);
 
@@ -91,7 +105,21 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction)
     {
-        return response()->json($transaction->load(['creator', 'approver']));
+        // Allow MD (managing director) to view any transaction regardless of
+        // fine-grained permissions. Other users must pass the policy check.
+        $user = request()->user();
+        $isMd = $user && isset($user->role) && (strtolower($user->role->name) === 'md' || strtolower($user->role->name) === 'managing_director');
+
+        if ($isMd) {
+            return response()->json($transaction->load(['creator', 'approver']));
+        }
+
+        // Enforce policy for non-MD users
+        if ($user && $user->can('view', $transaction)) {
+            return response()->json($transaction->load(['creator', 'approver']));
+        }
+
+        abort(403, 'This action is unauthorized.');
     }
 
     public function update(Request $request, Transaction $transaction)

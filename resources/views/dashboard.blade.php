@@ -645,7 +645,10 @@
     <div id="staff" class="page">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Staff Management</h1>
-                <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
+                    <button class="btn-secondary" onclick="openRolesModal()">Manage Roles & Permissions</button>
+                </div>
             </div>
             
             <div class="metrics-grid">
@@ -1027,6 +1030,37 @@
         </div>
     </div>
 
+        <!-- Roles & Permissions Modal -->
+        <div id="rolesModal" class="modal">
+            <div class="modal-content" style="max-width:900px;">
+                <div class="modal-header">Roles & Permissions</div>
+                <div style="display:flex;gap:16px;align-items:flex-start;">
+                    <div style="flex:0 0 260px; border-right:1px solid #eee;padding-right:12px;">
+                        <div style="font-weight:600;margin-bottom:8px;">Roles</div>
+                        <div id="rolesList" style="max-height:360px;overflow:auto;"></div>
+                        <div style="margin-top:12px;">
+                            <input type="text" id="newRoleName" placeholder="New role display name" style="width:100%;padding:6px;margin-bottom:6px;" />
+                            <button class="btn-primary" onclick="createRole()">Create Role</button>
+                        </div>
+                    </div>
+                    <div style="flex:1; padding-left:12px;">
+                        <div id="rolePermissionsArea">
+                                <div style="font-weight:600;margin-bottom:8px;" id="selectedRoleTitle">Select a role to edit permissions</div>
+                                <div id="permissionsContainer" style="max-height:260px;overflow:auto;border:1px solid #f0f0f0;padding:8px;border-radius:6px;background:#fff;"></div>
+                                <div style="margin-top:10px;">
+                                    <div style="font-weight:600;margin-bottom:6px;">Role Members</div>
+                                    <div id="roleMembersList" style="max-height:120px;overflow:auto;border:1px dashed #eee;padding:8px;border-radius:6px;background:#fafafa;"></div>
+                                </div>
+                            </div>
+                        <div style="margin-top:12px;text-align:right;">
+                            <button class="btn-secondary" onclick="closeModal('rolesModal')">Close</button>
+                            <button class="btn-primary" onclick="saveRolePermissions()">Save Permissions</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Department View Modal -->
         <div id="departmentModal" class="modal">
             <div class="modal-content">
@@ -1369,10 +1403,18 @@
                 const amount = t.amount ?? t.total ?? 0;
                 const date = t.transaction_date || t.date || t.created_at || '-';
                 // Build action buttons based on permission flags returned by API
+                // If the API doesn't include permission flags, default to showing
+                // View/Edit so users can inspect and edit items in the UI. Delete
+                // is shown only when the API explicitly allows it (to avoid
+                // exposing a delete button that would 403 immediately).
                 let actions = '';
-                if (t.can_update) actions += `<button class="btn-edit" onclick="editTransaction(${t.id})">Edit</button>`;
-                if (t.can_view) actions += `<button class="btn-secondary" onclick="viewTransaction(${t.id})">View</button>`;
-                if (t.can_delete) actions += `<button class="btn-delete" onclick="deleteTransaction(${t.id})">Delete</button>`;
+                const canUpdate = (typeof t.can_update === 'undefined') ? true : Boolean(t.can_update);
+                const canView = (typeof t.can_view === 'undefined') ? true : Boolean(t.can_view);
+                const canDelete = (typeof t.can_delete === 'undefined') ? false : Boolean(t.can_delete);
+
+                if (canUpdate) actions += `<button class="btn-edit" onclick="editTransaction(${t.id})">Edit</button>`;
+                if (canView) actions += `<button class="btn-secondary" onclick="viewTransaction(${t.id})">View</button>`;
+                if (canDelete) actions += `<button class="btn-delete" onclick="deleteTransaction(${t.id})">Delete</button>`;
 
                 return `
                     <tr>
@@ -1399,6 +1441,7 @@
                         <td><span class="status-badge ${statusClass}">${escapeHtml(i.status || '')}</span></td>
                         <td class="action-btns">
                             <button class="btn-edit" onclick="editInventory(${i.id})">Edit</button>
+                            <button class="btn-secondary" onclick="viewInventory(${i.id})">View</button>
                             <button class="btn-delete" onclick="deleteInventory(${i.id})">Delete</button>
                         </td>
                     </tr>
@@ -1425,6 +1468,72 @@
             if (currentEl) currentEl.textContent = totalUnits.toLocaleString();
             if (reorderEl) reorderEl.textContent = belowReorder.toLocaleString();
             if (turnoverEl) turnoverEl.textContent = turnover ? turnover.toFixed(2) : '0.00';
+        }
+
+        async function viewInventory(id) {
+            try {
+                const item = await apiFetch(`/api/inventory/${id}`);
+                if (!item) throw new Error('Not found');
+
+                // Create or populate the inventory view modal
+                let modal = document.getElementById('inventoryViewModal');
+                if (!modal) {
+                    const html = `
+                    <div id="inventoryViewModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">Inventory Item</div>
+                            <div style="margin-bottom:10px;"><strong id="viewInvName"></strong></div>
+                            <div style="color:#333;">
+                                <div><strong>Description:</strong> <div id="viewInvDesc" style="display:inline-block;margin-left:6px;color:#333;"></div></div>
+                                <div><strong>Stock Quantity:</strong> <span id="viewInvStock"></span></div>
+                                <div><strong>Reorder Level:</strong> <span id="viewInvReorder"></span></div>
+                                <div><strong>Unit:</strong> <span id="viewInvUnit"></span></div>
+                                <div><strong>Unit Price:</strong> <span id="viewInvPrice"></span></div>
+                                <div><strong>Status:</strong> <span id="viewInvStatus"></span></div>
+                                <div style="margin-top:8px;"><strong>Movements:</strong>
+                                    <div id="viewInvMovements" style="white-space:pre-wrap;margin-top:6px;color:#555;"></div>
+                                </div>
+                            </div>
+                            <div class="form-actions" style="margin-top:18px;"><button type="button" class="btn-secondary" onclick="closeModal('inventoryViewModal')">Close</button></div>
+                        </div>
+                    </div>`;
+                    document.body.insertAdjacentHTML('beforeend', html);
+                    modal = document.getElementById('inventoryViewModal');
+                }
+
+                // Populate fields (use safe fallbacks)
+                const nameEl = document.getElementById('viewInvName'); if (nameEl) nameEl.textContent = item.name || item.item_name || '';
+                const descEl = document.getElementById('viewInvDesc'); if (descEl) descEl.textContent = item.description || item.desc || '';
+                const stockEl = document.getElementById('viewInvStock'); if (stockEl) stockEl.textContent = Number(item.stock_quantity ?? item.qty ?? 0).toLocaleString();
+                const reorderEl = document.getElementById('viewInvReorder'); if (reorderEl) reorderEl.textContent = Number(item.reorder_level ?? item.minimum ?? 0).toLocaleString();
+                const unitEl = document.getElementById('viewInvUnit'); if (unitEl) unitEl.textContent = item.unit_of_measure || item.unit || '';
+                const priceEl = document.getElementById('viewInvPrice'); if (priceEl) priceEl.textContent = (item.unit_price !== undefined && item.unit_price !== null) ? '$' + Number(item.unit_price).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
+                const statusEl = document.getElementById('viewInvStatus'); if (statusEl) statusEl.textContent = item.status || '';
+
+                const mvEl = document.getElementById('viewInvMovements');
+                if (mvEl) {
+                    const movements = item.movements || item.movements_data || [];
+                    if (Array.isArray(movements) && movements.length) {
+                        mvEl.innerHTML = '<ul style="padding-left:16px;margin:0;">' + movements.map(m => `
+                            <li>${escapeHtml(m.movement_type || m.type || '')} • ${escapeHtml((m.quantity ?? m.qty ?? ''))} • ${(m.date || m.movement_date || '').split('T')[0] || ''}${m.note ? ' • ' + escapeHtml(m.note) : ''}</li>
+                        `).join('') + '</ul>';
+                    } else {
+                        mvEl.textContent = 'No movements recorded.';
+                    }
+                }
+
+                modal.classList.add('active');
+            } catch (err) {
+                console.error('Failed to load inventory', err);
+                try {
+                    const json = JSON.parse(err.message.replace(/^API .*?:\\s*/,''));
+                    if (json && json.message) {
+                        alert('Failed to load inventory: ' + json.message);
+                        return;
+                    }
+                } catch (e) {}
+                alert('Failed to load inventory item');
+            }
         }
 
         async function editInventory(id) {
@@ -1567,6 +1676,197 @@
             }
         }
 
+        // Roles & Permissions management
+    let rolesCache = [];
+    let permissionsCache = [];
+    let usersCache = [];
+        let selectedRoleId = null;
+
+        function openRolesModal() {
+            document.getElementById('rolesModal')?.classList.add('active');
+            loadRolesAndPermissions();
+        }
+
+        async function loadRolesAndPermissions() {
+            try {
+                const [roles, permsRes, users] = await Promise.all([
+                    apiFetch('/api/roles'),
+                    apiFetch('/api/permissions'),
+                    apiFetch('/api/users')
+                ]);
+
+                rolesCache = roles || [];
+                permissionsCache = (permsRes && (permsRes.permissions || permsRes)) || [];
+                usersCache = users || [];
+
+                // render roles list
+                const rl = document.getElementById('rolesList');
+                if (rl) {
+                    rl.innerHTML = (rolesCache || []).map(r => `
+                        <div style="padding:8px;border-bottom:1px solid #f6f6f6;cursor:pointer;" onclick="selectRole(${r.id})">
+                            <div style="font-weight:600;">${escapeHtml(r.display_name || r.name)}</div>
+                            <div style="font-size:12px;color:#666;">${escapeHtml((r.description || ''))}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // clear permissions area and members
+                document.getElementById('permissionsContainer').innerHTML = '';
+                document.getElementById('roleMembersList').innerHTML = '';
+                document.getElementById('selectedRoleTitle').textContent = 'Select a role to edit permissions';
+            } catch (err) {
+                console.error('Failed to load roles/permissions', err);
+                alert('Failed to load roles or permissions');
+            }
+        }
+
+        async function selectRole(id) {
+            try {
+                selectedRoleId = id;
+                // find role in cache (if role has permissions preloaded they may be available)
+                let role = rolesCache && rolesCache.find(r => r.id == id);
+                if (!role || !role.permissions) {
+                    role = await apiFetch(`/api/roles/${id}`);
+                }
+
+                // update title
+                document.getElementById('selectedRoleTitle').textContent = (role.display_name || role.name || 'Role') + ' — Permissions';
+
+                // render permissions grouped by module if available in permissionsCache
+                const container = document.getElementById('permissionsContainer');
+                if (!container) return;
+
+                // Build lookup of existing permissions for role
+                const rolePerms = (role.permissions || []).reduce((m,p)=>{ m[p.id] = p; return m; }, {});
+
+                // PermissionsCache may be an array of permission resources
+                const grouped = (Array.isArray(permissionsCache) ? permissionsCache : []).reduce((g,p)=>{
+                    const mod = p.module || 'General';
+                    g[mod] = g[mod] || [];
+                    g[mod].push(p);
+                    return g;
+                }, {});
+
+                let html = '';
+                for (const mod of Object.keys(grouped)) {
+                    html += `<div style="margin-bottom:10px;"><div style="font-weight:700;margin-bottom:6px;">${escapeHtml(mod)}</div>`;
+                    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+                    for (const p of grouped[mod]) {
+                        const has = !!rolePerms[p.id];
+                        const access = rolePerms[p.id]?.pivot?.access_level || rolePerms[p.id]?.access_level || 'view';
+                        html += `
+                            <label style="display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #fafafa;border-radius:4px;">
+                                <input type="checkbox" data-perm-id="${p.id}" ${has ? 'checked' : ''} onchange="onPermToggle(this)">
+                                <div style="flex:1;"><div style="font-weight:600;">${escapeHtml(p.display_name || p.name)}</div><div style="font-size:12px;color:#666;">${escapeHtml(p.description || '')}</div></div>
+                                <select data-perm-id-select="${p.id}" style="width:120px;" ${has ? '' : 'disabled'}>
+                                    <option value="view" ${access==='view'?'selected':''}>View</option>
+                                    <option value="edit" ${access==='edit'?'selected':''}>Edit</option>
+                                    <option value="approve" ${access==='approve'?'selected':''}>Approve</option>
+                                    <option value="full" ${access==='full'?'selected':''}>Full</option>
+                                </select>
+                            </label>
+                        `;
+                    }
+                    html += '</div></div>';
+                }
+
+                container.innerHTML = html;
+
+                // render members
+                const membersEl = document.getElementById('roleMembersList');
+                if (membersEl) {
+                    const memberHtml = (usersCache || []).map(u => {
+                        const has = (u.role_id && Number(u.role_id) === Number(id));
+                        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid #f6f6f6;">
+                            <div style="flex:1;">${escapeHtml((u.first_name||'') + ' ' + (u.last_name||''))} <div style="font-size:12px;color:#666;">${escapeHtml(u.email||'')}</div></div>
+                            <div style="margin-left:12px;">
+                                ${has ? `<button class="btn-secondary" onclick="removeRoleFromUser(${u.id})">Remove</button>` : `<button class="btn-primary" onclick="assignRoleToUser(${u.id})">Assign</button>`}
+                            </div>
+                        </div>`;
+                    }).join('');
+                    membersEl.innerHTML = memberHtml || '<div style="color:#666;">No users found.</div>';
+                }
+            } catch (err) {
+                console.error('Failed to load role details', err);
+                alert('Failed to load role details');
+            }
+        }
+
+        async function assignRoleToUser(userId) {
+            if (!selectedRoleId) { alert('Select a role first'); return; }
+            try {
+                const res = await apiFetch(`/api/users/${userId}`, { method: 'PUT', body: { role_id: selectedRoleId } });
+                // update local cache and UI
+                const u = usersCache.find(x => x.id == userId);
+                if (u) u.role_id = selectedRoleId;
+                await selectRole(selectedRoleId);
+                if (res && res.id) alert('Role assigned to user');
+            } catch (err) {
+                console.error('Failed to assign role', err);
+                alert('Failed to assign role to user');
+            }
+        }
+
+        async function removeRoleFromUser(userId) {
+            if (!selectedRoleId) { alert('Select a role first'); return; }
+            try {
+                const res = await apiFetch(`/api/users/${userId}`, { method: 'PUT', body: { role_id: null } });
+                const u = usersCache.find(x => x.id == userId);
+                if (u) u.role_id = null;
+                await selectRole(selectedRoleId);
+                if (res && res.id) alert('Role removed from user');
+            } catch (err) {
+                console.error('Failed to remove role', err);
+                alert('Failed to remove role from user');
+            }
+        }
+
+        function onPermToggle(cb) {
+            const pid = cb.getAttribute('data-perm-id');
+            const sel = document.querySelector(`select[data-perm-id-select="${pid}"]`);
+            if (sel) sel.disabled = !cb.checked;
+        }
+
+        async function saveRolePermissions() {
+            if (!selectedRoleId) { alert('No role selected'); return; }
+            try {
+                const container = document.getElementById('permissionsContainer');
+                const checks = container.querySelectorAll('input[type=checkbox][data-perm-id]');
+                const payload = { permissions: [] };
+                checks.forEach(ch => {
+                    if (ch.checked) {
+                        const pid = ch.getAttribute('data-perm-id');
+                        const sel = container.querySelector(`select[data-perm-id-select="${pid}"]`);
+                        const access = sel ? sel.value : 'view';
+                        payload.permissions.push({ permission_id: Number(pid), access_level: access });
+                    }
+                });
+
+                const res = await apiFetch(`/api/roles/${selectedRoleId}/permissions`, { method: 'POST', body: payload });
+                // refresh roles cache and UI
+                await loadRolesAndPermissions();
+                if (res && res.message) alert(res.message);
+            } catch (err) {
+                console.error('Failed to save role permissions', err);
+                alert('Failed to save permissions');
+            }
+        }
+
+        async function createRole() {
+            try {
+                const name = (document.getElementById('newRoleName')?.value || '').trim();
+                if (!name) { alert('Enter a role name'); return; }
+                // Use API to create role - POST /api/roles
+                const res = await apiFetch('/api/roles', { method: 'POST', body: { display_name: name, name: name.toLowerCase().replace(/\s+/g,'_') } });
+                document.getElementById('newRoleName').value = '';
+                await loadRolesAndPermissions();
+                if (res && res.id) selectRole(res.id);
+            } catch (err) {
+                console.error('Failed to create role', err);
+                alert('Failed to create role');
+            }
+        }
+
         function renderProduction(list) {
             const tbody = document.getElementById('productionTableBody');
             tbody.innerHTML = (list || []).map(p => {
@@ -1582,6 +1882,7 @@
                     <td>${downtime}</td>
                     <td class="action-btns">
                         <button class="btn-edit" onclick="editProduction(${p.id})">Edit</button>
+                        <button class="btn-secondary" onclick="viewProduction(${p.id})">View</button>
                         <button class="btn-delete" onclick="deleteProduction(${p.id})">Delete</button>
                     </td>
                 </tr>
@@ -1924,6 +2225,58 @@
                 }
             }
         }
+
+        async function viewProduction(id) {
+            try {
+                const p = await apiFetch(`/api/production/${id}`);
+                if (!p) throw new Error('Not found');
+
+                // Create or populate the production view modal
+                let modal = document.getElementById('productionViewModal');
+                if (!modal) {
+                    const html = `
+                    <div id="productionViewModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">Production Details</div>
+                            <div style="margin-bottom:10px;"><strong id="viewProdTitle"></strong></div>
+                            <div style="color:#333;">
+                                <div><strong>Date:</strong> <span id="viewProdDate"></span></div>
+                                <div><strong>Quantity:</strong> <span id="viewProdQuantity"></span></div>
+                                <div><strong>Efficiency:</strong> <span id="viewProdEfficiency"></span></div>
+                                <div><strong>Downtime:</strong> <span id="viewProdDowntime"></span></div>
+                                <div style="margin-top:8px;"><strong>Notes:</strong>
+                                    <div id="viewProdNotes" style="white-space:pre-wrap;margin-top:6px;color:#555;"></div>
+                                </div>
+                            </div>
+                            <div class="form-actions" style="margin-top:18px;"><button type="button" class="btn-secondary" onclick="closeModal('productionViewModal')">Close</button></div>
+                        </div>
+                    </div>`;
+                    document.body.insertAdjacentHTML('beforeend', html);
+                    modal = document.getElementById('productionViewModal');
+                }
+
+                // Populate fields (use safe fallbacks)
+                const titleEl = document.getElementById('viewProdTitle'); if (titleEl) titleEl.textContent = p.title || `Production ${p.production_date || ''}`;
+                const dateEl = document.getElementById('viewProdDate'); if (dateEl) dateEl.textContent = (p.production_date || p.date || p.created_at || '').split('T')[0] || '';
+                const qtyEl = document.getElementById('viewProdQuantity'); if (qtyEl) qtyEl.textContent = (p.quantity !== undefined ? Number(p.quantity).toLocaleString() + ' L' : (p.amount !== undefined ? Number(p.amount).toLocaleString() + ' L' : ''));
+                const effEl = document.getElementById('viewProdEfficiency'); if (effEl) effEl.textContent = (p.efficiency_percentage ?? p.efficiency ?? p.efficiency_percent) ? String(p.efficiency_percentage ?? p.efficiency ?? p.efficiency_percent) + '%' : '';
+                const downEl = document.getElementById('viewProdDowntime'); if (downEl) downEl.textContent = (p.downtime_hours !== undefined ? String(p.downtime_hours) + ' hrs' : '');
+                const notesEl = document.getElementById('viewProdNotes'); if (notesEl) notesEl.textContent = p.notes || '';
+
+                modal.classList.add('active');
+            } catch (err) {
+                console.error('Failed to load production', err);
+                try {
+                    const json = JSON.parse(err.message.replace(/^API .*?:\\s*/,''));
+                    if (json && json.message) {
+                        alert('Failed to load production: ' + json.message);
+                        return;
+                    }
+                } catch (e) {}
+                alert('Failed to load production');
+            }
+        }
+
 
         async function saveProcess(e) {
             e.preventDefault();
