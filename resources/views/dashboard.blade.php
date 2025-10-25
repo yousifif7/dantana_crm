@@ -22,7 +22,7 @@
         }
 
         .sidebar {
-            width: 280px;
+            width: 200px;
             background-color: #1e3a2e;
             color: white;
             padding: 30px 0;
@@ -90,7 +90,7 @@
         .main-content {
             flex: 1;
             overflow-y: auto;
-            padding: 40px 50px;
+            padding: 40px 10px;
         }
 
         .page {
@@ -129,7 +129,7 @@
         }
 
         .metric-value {
-            font-size: 36px;
+            font-size: 20px;
             font-weight: 700;
             color: #1e3a2e;
         }
@@ -463,7 +463,7 @@
             <div class="logo-subtext">FOODS</div>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item" onclick="navigateTo('inventory', this)">
+            <li class="nav-item" onclick="navigateTo('overview', this)">
                 <span>🏠</span> Overview
             </li>
             <li class="nav-item active" onclick="navigateTo('ai-dashboard', this)">
@@ -472,7 +472,7 @@
             <li class="nav-item" onclick="navigateTo('oil-production', this)">
                 <span>💧</span> Oil Production
             </li>
-            <li class="nav-item" onclick="navigateTo('staff', this)">
+            <li class="nav-item" onclick="navigateTo('food-division', this)">
                 <span>👥</span> Food Division
             </li>
             <li class="nav-item" onclick="navigateTo('inventory', this)">
@@ -496,8 +496,48 @@
                 <button id="logoutBtn" class="btn-secondary">Logout</button>
             </div>
         </div>
-        <!-- AI Dashboard Page -->
         <br><br>
+
+        <!-- Overview Page -->
+        <div id="overview" class="page">
+            <div class="section-header">
+                <h1 class="page-title" style="margin: 0;">Overview</h1>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Employees</div>
+                    <div class="metric-value" id="overviewTotalUsers">{{ $metrics['user_count'] ?? 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Departments</div>
+                    <div class="metric-value" id="overviewDepartments">{{ $metrics['departments_count'] ?? 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Inventory Items</div>
+                    <div class="metric-value" id="overviewInventoryItems">{{ $metrics['inventory_items'] ?? 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Production Records</div>
+                    <div class="metric-value" id="overviewProduction">{{ $metrics['production_records'] ?? 0 }}</div>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-title">Quick View</div>
+                    <p style="color:#666;">Summary of core counts. Click sections in the sidebar to view details.</p>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Recent Activity</div>
+                    <div id="overviewRecentActivity">
+                        <p style="color:#666;">Recent transactions, production and process activity will appear here after loading.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Dashboard Page -->
         <div id="ai-dashboard" class="page active">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">AI Dashboard</h1>
@@ -602,7 +642,7 @@
         </div>
 
         <!-- Staff Management Page -->
-        <div id="staff" class="page">
+    <div id="staff" class="page">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Staff Management</h1>
                 <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
@@ -657,6 +697,78 @@
                     <div class="chart-title">Absenteeism</div>
                     <canvas id="absenteeismChart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        <!-- Food Division Page -->
+        @php
+            // Try to find a department that represents Food Division (case-insensitive match)
+            $foodDept = null;
+            foreach($departments ?? [] as $d) {
+                if (isset($d->name) && stripos($d->name, 'food') !== false) { $foodDept = $d; break; }
+            }
+        @endphp
+
+        <div id="food-division" class="page">
+            <div class="section-header">
+                <h1 class="page-title" style="margin: 0;">Food Division</h1>
+                <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total employees (Food)</div>
+                    <div class="metric-value">{{ $foodDept ? (isset($foodDept->users) ? count($foodDept->users) : ($foodDept->users_count ?? 0)) : 0 }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Active</div>
+                    <div class="metric-value">{{ $foodDept ? (isset($foodDept->users) ? collect($foodDept->users)->where('is_active', 1)->count() : 'N/A') : 'N/A' }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Open Positions</div>
+                    <div class="metric-value">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Avg Age</div>
+                    <div class="metric-value">{{ $foodDept ? (isset($foodDept->users) ? round(collect($foodDept->users)->avg('age') ?: 0,1) : 'N/A') : 'N/A' }}</div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-title">Food Division Staff</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if($foodDept && (isset($foodDept->users) ? count($foodDept->users) : ($foodDept->users_count ?? 0) > 0))
+                            @foreach($foodDept->users as $u)
+                                <tr>
+                                    <td>{{ $u->employee_id ?? '' }}</td>
+                                    <td>{{ ($u->first_name ?? '') . ' ' . ($u->last_name ?? '') }}</td>
+                                    <td>{{ $u->role->display_name ?? $u->role->name ?? '' }}</td>
+                                    <td>{{ $u->email ?? '' }}</td>
+                                    <td>{!! ($u->is_active ?? false) ? '<span class="status-badge status-in-stock">Active</span>' : '<span class="status-badge status-pending">Inactive</span>' !!}</td>
+                                    <td class="action-btns">
+                                        <button class="btn-edit" onclick="openStaffModal();">Edit</button>
+                                        <button class="btn-delete" onclick="/* implement delete user */">Delete</button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="6">No Food Division department found or no users assigned. Please ensure a department with "Food" in its name exists and has users.</td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -1040,6 +1152,9 @@
         function openTransactionModal() {
             try {
                 document.getElementById('transactionForm')?.reset();
+                // clear edit state
+                window.currentTransactionEditId = null;
+                const header = document.querySelector('#transactionModal .modal-header'); if (header) header.textContent = 'Add Transaction';
                 document.getElementById('transactionModal')?.classList.add('active');
             } catch (e) { console.error('openTransactionModal', e); }
         }
@@ -1152,14 +1267,94 @@
             }
         }
 
+        // Renders a compact combined recent-activity list into the Overview page.
+        function renderOverviewActivities(transactions = [], processes = [], production = []) {
+            const container = document.getElementById('overviewRecentActivity');
+            if (!container) return;
+
+            // Normalize to arrays and pick top 5 from each source, ordered by created/updated time
+            const tx = (transactions || []).slice(0,5).map(t => ({
+                type: 'Transaction',
+                title: t.description || t.title || t.name || 'Transaction',
+                date: t.transaction_date || t.created_at || t.date || '',
+                summary: (t.amount !== undefined) ? formatCurrency(t.amount) : ''
+            }));
+
+            const pr = (processes || []).slice(0,5).map(p => ({
+                type: 'Process',
+                title: p.name || p.title || 'Process',
+                date: p.updated_at || p.due_date || p.created_at || '',
+                summary: p.status || ''
+            }));
+
+            const pd = (production || []).slice(0,5).map(p => ({
+                type: 'Production',
+                title: p.title || (p.production_date ? `Production ${p.production_date}` : 'Production'),
+                date: p.production_date || p.created_at || '',
+                summary: (p.quantity !== undefined) ? (Number(p.quantity).toLocaleString() + 'L') : ''
+            }));
+
+            // Combine and sort by date (newest first) when date available
+            const combined = tx.concat(pr, pd).sort((a,b) => {
+                const ad = a.date ? new Date(a.date).getTime() : 0;
+                const bd = b.date ? new Date(b.date).getTime() : 0;
+                return bd - ad;
+            }).slice(0, 10);
+
+            if (combined.length === 0) {
+                container.innerHTML = '<p style="color:#666;">No recent activity yet.</p>';
+                return;
+            }
+
+            container.innerHTML = '<ul style="list-style:none;padding-left:0;margin:0;">' + combined.map(it => `
+                <li style="padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                    <div style="font-weight:600;color:#1e3a2e;">${escapeHtml(it.type)}: ${escapeHtml(it.title)}</div>
+                    <div style="color:#666;font-size:13px;margin-top:4px;">${escapeHtml(it.summary)} ${it.date ? ' • ' + escapeHtml(it.date.split('T')[0]) : ''}</div>
+                </li>
+            `).join('') + '</ul>';
+        }
         function renderMetrics(m) {
             // Expecting keys: total_revenue, total_expenses, net_profit, profit_margin, total_employees
             if (!m) return;
-            if (m.total_revenue !== undefined) document.getElementById('totalRevenue').textContent = formatCurrency(m.total_revenue);
-            if (m.total_expenses !== undefined) document.getElementById('totalExpenses').textContent = formatCurrency(m.total_expenses);
-            if (m.net_profit !== undefined) document.getElementById('netProfit').textContent = formatCurrency(m.net_profit);
-            if (m.profit_margin !== undefined) document.getElementById('profitMargin').textContent = (m.profit_margin + '%');
-            if (m.total_employees !== undefined) document.getElementById('totalEmployees').textContent = m.total_employees;
+
+            // Support multiple shapes returned by different role-based endpoints:
+            // - { total_revenue, total_expenses, ... }
+            // - { metrics: { total_revenue, ... } }
+            // - { counts: { users: N } }
+            const top = m;
+            const inner = (m.metrics && typeof m.metrics === 'object') ? m.metrics : m;
+            const counts = (m.counts && typeof m.counts === 'object') ? m.counts : null;
+
+            const tr = inner.total_revenue ?? top.total_revenue ?? null;
+            const te = inner.total_expenses ?? top.total_expenses ?? null;
+            const np = inner.net_profit ?? top.net_profit ?? null;
+            const pm = inner.profit_margin ?? top.profit_margin ?? null;
+            const usersCount = counts?.users ?? inner.total_employees ?? top.total_employees ?? null;
+
+            if (tr !== null && tr !== undefined) document.getElementById('totalRevenue').textContent = formatCurrency(tr);
+            if (te !== null && te !== undefined) document.getElementById('totalExpenses').textContent = formatCurrency(te);
+            if (np !== null && np !== undefined) document.getElementById('netProfit').textContent = formatCurrency(np);
+            if (pm !== null && pm !== undefined) document.getElementById('profitMargin').textContent = (pm + '%');
+            if (usersCount !== null && usersCount !== undefined) {
+                const el = document.getElementById('totalEmployees'); if (el) el.textContent = usersCount;
+                const el2 = document.getElementById('overviewTotalUsers'); if (el2) el2.textContent = usersCount;
+            }
+
+            // Additional overview counters
+            const depCount = counts?.departments ?? inner.departments_count ?? top.departments_count ?? null;
+            if (depCount !== null && depCount !== undefined) {
+                const el = document.getElementById('overviewDepartments'); if (el) el.textContent = depCount;
+            }
+
+            const invItems = inner.inventory?.total_items ?? top.inventory_items ?? null;
+            if (invItems !== null && invItems !== undefined) {
+                const el = document.getElementById('overviewInventoryItems'); if (el) el.textContent = invItems;
+            }
+
+            const prodCount = inner.production?.total ?? top.production_records ?? null;
+            if (prodCount !== null && prodCount !== undefined) {
+                const el = document.getElementById('overviewProduction'); if (el) el.textContent = prodCount;
+            }
         }
 
         function formatCurrency(v) {
@@ -1173,16 +1368,18 @@
                 const desc = t.description || t.title || t.name || '-';
                 const amount = t.amount ?? t.total ?? 0;
                 const date = t.transaction_date || t.date || t.created_at || '-';
+                // Build action buttons based on permission flags returned by API
+                let actions = '';
+                if (t.can_update) actions += `<button class="btn-edit" onclick="editTransaction(${t.id})">Edit</button>`;
+                if (t.can_view) actions += `<button class="btn-secondary" onclick="viewTransaction(${t.id})">View</button>`;
+                if (t.can_delete) actions += `<button class="btn-delete" onclick="deleteTransaction(${t.id})">Delete</button>`;
+
                 return `
                     <tr>
                         <td>${escapeHtml(desc)}</td>
                         <td>${formatCurrency(amount)}</td>
                         <td>${date}</td>
-                                <td class="action-btns">
-                                    <button class="btn-edit" onclick="editTransaction(${t.id})">Edit</button>
-                                    <button class="btn-secondary" onclick="viewTransaction(${t.id})">View</button>
-                                    <button class="btn-delete" onclick="deleteTransaction(${t.id})">Delete</button>
-                                </td>
+                        <td class="action-btns">${actions}</td>
                     </tr>
                 `;
             }).join('');
@@ -1299,21 +1496,37 @@
         }
 
         function renderDepartments(list) {
-            const tbody = document.getElementById('staffTableBody');
-            tbody.innerHTML = (list || []).map(d => {
-                const usersCount = d.users_count ?? (Array.isArray(d.users) ? d.users.length : d.user_count ?? 0);
-                const avgAge = d.avg_age ?? 0;
-                return `
-                    <tr>
-                        <td>${escapeHtml(d.name)}</td>
-                        <td>${usersCount}</td>
-                        <td>${avgAge}</td>
-                        <td>
-                            <button class="btn-edit" onclick="viewDepartment(${d.id})">View</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+                    const tbody = document.getElementById('staffTableBody');
+
+                    // If the API returned an empty list or the items lack user counts,
+                    // fall back to the server-rendered `window.allDepartments` which was
+                    // injected by Blade and contains counts via `withCount('users')`.
+                    let renderList = list;
+                    const needsFallback = !renderList || (Array.isArray(renderList) && renderList.length === 0) ||
+                        (Array.isArray(renderList) && renderList.every(d => (d.users_count === undefined || d.users_count === 0) && (!Array.isArray(d.users) || d.users.length === 0)));
+
+                    if (needsFallback && window.allDepartments && Array.isArray(window.allDepartments) && window.allDepartments.length > 0) {
+                        renderList = window.allDepartments;
+                    }
+
+                    tbody.innerHTML = (renderList || []).map(d => {
+                        // d may be an Eloquent-serialized object from the server (with users_count)
+                        // or an API response; try multiple fallbacks.
+                        const usersCount = (d.users_count !== undefined && d.users_count !== null)
+                            ? d.users_count
+                            : (Array.isArray(d.users) ? d.users.length : (d.user_count ?? 0));
+                        const avgAge = d.avg_age ?? (d.users && Array.isArray(d.users) && d.users.length ? (d.users.reduce((s,u)=>s+(u.age || 0),0) / d.users.length).toFixed(1) : 0);
+                        return `
+                            <tr>
+                                <td>${escapeHtml(d.name)}</td>
+                                <td>${usersCount}</td>
+                                <td>${avgAge}</td>
+                                <td>
+                                    <button class="btn-edit" onclick="viewDepartment(${d.id})">View</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
         }
 
         // Show department details and its users in a modal. Attempts to use
@@ -1489,10 +1702,39 @@
                 notes: document.getElementById('transactionNotes')?.value || null,
             };
             try {
-                await apiFetch('/api/transactions', {method: 'POST', body: payload});
+                if (window.currentTransactionEditId) {
+                    await apiFetch(`/api/transactions/${window.currentTransactionEditId}`, { method: 'PUT', body: payload });
+                } else {
+                    await apiFetch('/api/transactions', {method: 'POST', body: payload});
+                }
                 await loadAllData();
                 closeModal('transactionModal');
+                window.currentTransactionEditId = null;
+                const header = document.querySelector('#transactionModal .modal-header'); if (header) header.textContent = 'Add Transaction';
             } catch (err) { console.error(err); alert('Failed to save transaction'); }
+        }
+
+        // Prefill transaction modal for editing
+        async function editTransaction(id) {
+            try {
+                const t = await apiFetch(`/api/transactions/${id}`);
+                if (!t) throw new Error('Not found');
+
+                document.getElementById('transactionType').value = t.type || '';
+                document.getElementById('transactionDesc').value = t.description || '';
+                document.getElementById('transactionAmount').value = t.amount ?? t.total ?? '';
+                document.getElementById('transactionDate').value = (t.transaction_date || t.date || '').split('T')[0];
+                if (document.getElementById('transactionCategory')) document.getElementById('transactionCategory').value = t.category || '';
+                if (document.getElementById('transactionClient')) document.getElementById('transactionClient').value = t.client_name || '';
+                if (document.getElementById('transactionNotes')) document.getElementById('transactionNotes').value = t.notes || '';
+
+                window.currentTransactionEditId = id;
+                const header = document.querySelector('#transactionModal .modal-header'); if (header) header.textContent = 'Edit Transaction';
+                document.getElementById('transactionModal')?.classList.add('active');
+            } catch (err) {
+                console.error('Failed to load transaction for edit', err);
+                alert('Failed to load transaction');
+            }
         }
 
         // View a transaction in a read-only modal
@@ -1529,6 +1771,14 @@
                 modal.classList.add('active');
             } catch (err) {
                 console.error('Failed to load transaction', err);
+                // Try to surface API message if available
+                try {
+                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
+                    if (json && json.message) {
+                        alert('Failed to load transaction: ' + json.message);
+                        return;
+                    }
+                } catch(e){}
                 alert('Failed to load transaction');
             }
         }

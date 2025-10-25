@@ -13,6 +13,9 @@ Route::get('/', function () {
 use App\Models\Role;
 use App\Models\Department;
 use App\Models\User;
+use App\Models\InventoryItem;
+use App\Models\ProductionRecord;
+use App\Models\Transaction;
 
 Route::get('/dashboard', function () {
 	// Provide server-side data required for the Blade add-employee form and
@@ -22,6 +25,10 @@ Route::get('/dashboard', function () {
 	$users = User::where('is_active', true)->orderBy('first_name')->get();
 	$metrics = [
 		'user_count' => User::count(),
+		'departments_count' => Department::count(),
+		'inventory_items' => InventoryItem::count(),
+		'production_records' => ProductionRecord::count(),
+		'transactions_count' => Transaction::count(),
 	];
 
 	return view('dashboard', compact('roles', 'departments', 'metrics', 'users'));

@@ -42,6 +42,14 @@ class TransactionController extends Controller
 
         $transactions = $query->latest()->paginate(15);
 
+        // Attach permission flags per transaction so the frontend can show/hide actions
+        $transactions->getCollection()->transform(function ($t) use ($request) {
+            $t->can_view = $request->user() ? $request->user()->can('view', $t) : false;
+            $t->can_update = $request->user() ? $request->user()->can('update', $t) : false;
+            $t->can_delete = $request->user() ? $request->user()->can('delete', $t) : false;
+            return $t;
+        });
+
         $this->auditService->log($request->user(), 'viewed', 'finance', null);
 
         return response()->json($transactions);
