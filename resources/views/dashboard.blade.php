@@ -463,11 +463,11 @@
             <div class="logo-subtext">FOODS</div>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item" onclick="navigateTo('overview', this)">
+            {{-- <li class="nav-item" onclick="navigateTo('overview', this)">
                 <span>🏠</span> Overview
-            </li>
+            </li> --}}
             <li class="nav-item active" onclick="navigateTo('ai-dashboard', this)">
-                <span>📊</span> AI Dashboard
+                <span>📊</span> Dashboard
             </li>
             <li class="nav-item" onclick="navigateTo('oil-production', this)">
                 <span>💧</span> Oil Production
@@ -540,7 +540,7 @@
         <!-- AI Dashboard Page -->
         <div id="ai-dashboard" class="page active">
             <div class="section-header">
-                <h1 class="page-title" style="margin: 0;">AI Dashboard</h1>
+                <h1 class="page-title" style="margin: 0;">Dashboard</h1>
                 <button class="btn-primary" onclick="openTransactionModal()">Add Transaction</button>
             </div>
             
