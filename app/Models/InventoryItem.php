@@ -12,7 +12,7 @@ class InventoryItem extends Model
     protected $fillable = [
         'item_code', 'name', 'description', 'stock_quantity',
         'reorder_level', 'maximum_level', 'status', 'unit_of_measure',
-        'unit_price', 'created_by'
+        'unit_price', 'created_by', 'category', 'department_id'
     ];
 
     protected $casts = [
@@ -20,6 +20,7 @@ class InventoryItem extends Model
         'reorder_level' => 'integer',
         'maximum_level' => 'integer',
         'unit_price' => 'decimal:2',
+        'department_id' => 'integer',
     ];
 
     protected static function boot()
@@ -43,6 +44,11 @@ class InventoryItem extends Model
     public function movements()
     {
         return $this->hasMany(InventoryMovement::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
     }
 
     public function updateStatus()

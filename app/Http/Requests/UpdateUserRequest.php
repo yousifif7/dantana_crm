@@ -27,6 +27,7 @@ class UpdateUserRequest extends FormRequest
             'last_name' => 'sometimes|string|max:255',
             'email' => "sometimes|email|unique:users,email,{$userId}",
             'phone' => 'nullable|string|max:20',
+            'role_id' => 'nullable|exists:roles,id',
             'department_id' => 'nullable|exists:departments,id',
             'reports_to' => 'nullable|exists:users,id',
             'age' => 'nullable|integer|min:18|max:70',

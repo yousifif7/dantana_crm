@@ -623,11 +623,13 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Item</th>
-                                <th>Stock</th>
-                                <th>Reorder L</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Department</th>
+                    <th>Stock</th>
+                    <th>Reorder L</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="inventoryTableBody">
@@ -715,61 +717,46 @@
         <div id="food-division" class="page">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Food Division</h1>
-                <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="btn-primary" onclick="openInventoryModal('food')">Add Food Item</button>
+                    <button class="btn-secondary" onclick="openStaffModal()">Add Employee</button>
+                </div>
             </div>
 
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <div class="metric-label">Total employees (Food)</div>
-                    <div class="metric-value">{{ $foodDept ? (isset($foodDept->users) ? count($foodDept->users) : ($foodDept->users_count ?? 0)) : 0 }}</div>
+                    <div class="metric-label">Total Food Items</div>
+                    <div class="metric-value" id="foodTotalItems">0</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-label">Active</div>
-                    <div class="metric-value">{{ $foodDept ? (isset($foodDept->users) ? collect($foodDept->users)->where('is_active', 1)->count() : 'N/A') : 'N/A' }}</div>
+                    <div class="metric-label">Total Stock</div>
+                    <div class="metric-value" id="foodTotalStock">0</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-label">Open Positions</div>
-                    <div class="metric-value">0</div>
+                    <div class="metric-label">Below Reorder</div>
+                    <div class="metric-value" id="foodBelowReorder">0</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-label">Avg Age</div>
-                    <div class="metric-value">{{ $foodDept ? (isset($foodDept->users) ? round(collect($foodDept->users)->avg('age') ?: 0,1) : 'N/A') : 'N/A' }}</div>
+                    <div class="metric-label">Distinct Departments</div>
+                    <div class="metric-value" id="foodDeptCount">0</div>
                 </div>
             </div>
 
             <div class="chart-card">
-                <div class="chart-title">Food Division Staff</div>
+                <div class="chart-title">Food Inventory</div>
                 <table>
                     <thead>
                         <tr>
-                            <th>Employee ID</th>
-                            <th>Name</th>
-                            <th>Role</th>
-                            <th>Email</th>
+                            <th>Item</th>
+                            <th>Department</th>
+                            <th>Stock</th>
+                            <th>Unit</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @if($foodDept && (isset($foodDept->users) ? count($foodDept->users) : ($foodDept->users_count ?? 0) > 0))
-                            @foreach($foodDept->users as $u)
-                                <tr>
-                                    <td>{{ $u->employee_id ?? '' }}</td>
-                                    <td>{{ ($u->first_name ?? '') . ' ' . ($u->last_name ?? '') }}</td>
-                                    <td>{{ $u->role->display_name ?? $u->role->name ?? '' }}</td>
-                                    <td>{{ $u->email ?? '' }}</td>
-                                    <td>{!! ($u->is_active ?? false) ? '<span class="status-badge status-in-stock">Active</span>' : '<span class="status-badge status-pending">Inactive</span>' !!}</td>
-                                    <td class="action-btns">
-                                        <button class="btn-edit" onclick="openStaffModal();">Edit</button>
-                                        <button class="btn-delete" onclick="/* implement delete user */">Delete</button>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="6">No Food Division department found or no users assigned. Please ensure a department with "Food" in its name exists and has users.</td>
-                            </tr>
-                        @endif
+                    <tbody id="foodInventoryBody">
+                        <!-- populated by JS -->
                     </tbody>
                 </table>
             </div>
@@ -937,6 +924,25 @@
                 <div class="form-group">
                     <label>Unit Price</label>
                     <input type="number" step="0.01" id="inventoryPrice">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="inventoryCategory">
+                        <option value="">-- Select --</option>
+                        <option value="food">Food</option>
+                        <option value="raw_material">Raw Material</option>
+                        <option value="consumable">Consumable</option>
+                        <option value="equipment">Equipment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <select id="inventoryDepartment">
+                        <option value="">-- None --</option>
+                        @foreach(($departments ?? collect()) as $d)
+                            <option value="{{ $d->id }}">{{ $d->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -1193,13 +1199,22 @@
             } catch (e) { console.error('openTransactionModal', e); }
         }
 
-        function openInventoryModal() {
+        function openInventoryModal(category = null) {
             try {
                 document.getElementById('inventoryForm')?.reset();
                 // clear edit state
                 window.currentInventoryEditId = null;
                 const header = document.querySelector('#inventoryModal .modal-header');
-                if (header) header.textContent = 'Add Inventory Item';
+                if (header) header.textContent = category === 'food' ? 'Add Food Item' : 'Add Inventory Item';
+                // preselect category if provided
+                if (category && document.getElementById('inventoryCategory')) {
+                    document.getElementById('inventoryCategory').value = category;
+                } else if (document.getElementById('inventoryCategory')) {
+                    document.getElementById('inventoryCategory').value = '';
+                }
+                // clear department selector
+                if (document.getElementById('inventoryDepartment')) document.getElementById('inventoryDepartment').value = '';
+
                 document.getElementById('inventoryModal')?.classList.add('active');
             } catch (e) { console.error('openInventoryModal', e); }
         }
@@ -1296,6 +1311,8 @@
                 renderProcesses(processes || []);
 
                 initChartsWithData(metrics, transactions, inventory, production);
+                // Populate Food Division inventory list
+                loadFoodDivision();
             } catch (err) {
                 console.error('Failed to load dashboard data', err);
             }
@@ -1435,6 +1452,8 @@
                 return `
                     <tr>
                         <td>${escapeHtml(i.name || '')}</td>
+                        <td>${escapeHtml(i.category || '')}</td>
+                        <td>${escapeHtml((i.department && i.department.name) || (i.department_id ? ('#' + i.department_id) : ''))}</td>
                         <td>${Number(i.stock_quantity || 0).toLocaleString()}</td>
                         <td>${Number(i.reorder_level || 0).toLocaleString()}</td>
                         <td>${escapeHtml(i.unit_of_measure || '')}</td>
@@ -1468,6 +1487,53 @@
             if (currentEl) currentEl.textContent = totalUnits.toLocaleString();
             if (reorderEl) reorderEl.textContent = belowReorder.toLocaleString();
             if (turnoverEl) turnoverEl.textContent = turnover ? turnover.toFixed(2) : '0.00';
+        }
+
+        // Load and render Food Division (inventory items with category=food)
+        async function loadFoodDivision() {
+            try {
+                const data = await apiFetch('/api/inventory?category=food&with_movements=1');
+                // the inventory API returns paginated results; data.data may be present
+                const list = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : (data.items || []));
+                renderFoodDivision(list);
+            } catch (err) {
+                console.error('Failed to load food division inventory', err);
+            }
+        }
+
+        function renderFoodDivision(list) {
+            const tbody = document.getElementById('foodInventoryBody');
+            if (!tbody) return;
+            tbody.innerHTML = (list || []).map(i => {
+                const status = (i.status || 'unknown').toLowerCase();
+                const statusClass = status === 'in_stock' ? 'status-in-stock' : status === 'on_order' ? 'status-on-order' : 'status-low-stock';
+                const deptName = (i.department && i.department.name) ? i.department.name : (i.department_id ? ('#' + i.department_id) : '');
+                return `
+                    <tr>
+                        <td>${escapeHtml(i.name || '')}</td>
+                        <td>${escapeHtml(deptName)}</td>
+                        <td>${Number(i.stock_quantity || 0).toLocaleString()}</td>
+                        <td>${escapeHtml(i.unit_of_measure || '')}</td>
+                        <td><span class="status-badge ${statusClass}">${escapeHtml(i.status || '')}</span></td>
+                        <td class="action-btns">
+                            <button class="btn-edit" onclick="editInventory(${i.id})">Edit</button>
+                            <button class="btn-secondary" onclick="viewInventory(${i.id})">View</button>
+                            <button class="btn-delete" onclick="deleteInventory(${i.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // metrics
+            const totalItems = (list || []).length;
+            const totalStock = (list || []).reduce((s, it) => s + Number(it.stock_quantity || 0), 0);
+            const belowReorder = (list || []).filter(it => (it.stock_quantity ?? 0) <= (it.reorder_level ?? 0)).length;
+            const deptCount = new Set((list || []).map(it => it.department_id).filter(Boolean)).size;
+
+            const totalEl = document.getElementById('foodTotalItems'); if (totalEl) totalEl.textContent = totalItems.toLocaleString();
+            const stockEl = document.getElementById('foodTotalStock'); if (stockEl) stockEl.textContent = totalStock.toLocaleString();
+            const belowEl = document.getElementById('foodBelowReorder'); if (belowEl) belowEl.textContent = belowReorder.toLocaleString();
+            const deptEl = document.getElementById('foodDeptCount'); if (deptEl) deptEl.textContent = deptCount.toLocaleString();
         }
 
         async function viewInventory(id) {
@@ -1549,6 +1615,8 @@
                 if (document.getElementById('inventoryUnit')) document.getElementById('inventoryUnit').value = item.unit_of_measure || '';
                 if (document.getElementById('inventoryPrice')) document.getElementById('inventoryPrice').value = item.unit_price ?? '';
                 if (document.getElementById('inventoryStatus')) document.getElementById('inventoryStatus').value = item.status || 'in_stock';
+                if (document.getElementById('inventoryCategory')) document.getElementById('inventoryCategory').value = item.category || '';
+                if (document.getElementById('inventoryDepartment')) document.getElementById('inventoryDepartment').value = item.department_id ?? '';
 
                 // update modal header to editing mode
                 const header = document.querySelector('#inventoryModal .modal-header');
@@ -1673,6 +1741,50 @@
             } catch (err) {
                 console.error('Failed to load department', err);
                 alert('Failed to load department details');
+            }
+        }
+
+        // Food Division helpers: create or mark an existing department as Food Division
+        async function createFoodDivision() {
+            if (!confirm('Create a new department named "Food Division"?')) return;
+            try {
+                // Department creation requires a unique code. Generate a sensible default.
+                const code = 'FOOD';
+                const res = await apiFetch('/api/departments', { method: 'POST', body: { name: 'Food Division', code: code, description: 'Auto-created Food Division' } });
+                if (res && res.id) {
+                    alert('Food Division created. Reloading...');
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error('Failed to create department', err);
+                try {
+                    const json = JSON.parse(err.message.replace(/^API .*?:\\s*/,''));
+                    if (json && json.errors) {
+                        const messages = Object.values(json.errors).flat().join('\n');
+                        alert('Failed to create Food Division:\n' + messages);
+                        return;
+                    } else if (json && json.message) {
+                        alert('Failed to create Food Division: ' + json.message);
+                        return;
+                    }
+                } catch (e) {}
+                alert('Failed to create Food Division - check permissions');
+            }
+        }
+
+        async function setSelectedAsFood() {
+            const sel = document.getElementById('chooseDeptForFood');
+            if (!sel) return alert('No department select found');
+            const id = sel.value;
+            if (!id) return alert('Select a department first');
+            if (!confirm('Rename selected department to "Food Division"? This will change the department name.')) return;
+            try {
+                const res = await apiFetch(`/api/departments/${id}`, { method: 'PUT', body: { name: 'Food Division' } });
+                alert('Department renamed. Reloading...');
+                window.location.reload();
+            } catch (err) {
+                console.error('Failed to rename department', err);
+                alert('Failed to rename department - check permissions');
             }
         }
 
@@ -2113,7 +2225,9 @@
                 maximum_level: document.getElementById('inventoryMax')?.value ? Number(document.getElementById('inventoryMax').value) : null,
                 unit_of_measure: document.getElementById('inventoryUnit').value,
                 unit_price: document.getElementById('inventoryPrice')?.value ? Number(document.getElementById('inventoryPrice').value) : null,
-                status: document.getElementById('inventoryStatus').value
+                status: document.getElementById('inventoryStatus').value,
+                category: document.getElementById('inventoryCategory')?.value || null,
+                department_id: document.getElementById('inventoryDepartment')?.value || null
             };
 
             try {

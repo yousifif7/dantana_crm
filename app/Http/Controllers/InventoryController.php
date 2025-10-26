@@ -16,7 +16,7 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
 
-        $query = InventoryItem::with('creator');
+        $query = InventoryItem::with(['creator', 'department']);
         // Optionally include movements when frontend requests it (for metrics like turnover)
         if ($request->query('with_movements')) {
             $query->with('movements');
@@ -28,6 +28,10 @@ class InventoryController extends Controller
 
         if ($request->has('low_stock')) {
             $query->whereRaw('stock_quantity <= reorder_level');
+        }
+
+        if ($request->has('category')) {
+            $query->where('category', $request->category);
         }
 
         return response()->json($query->latest()->paginate(15));
@@ -43,6 +47,8 @@ class InventoryController extends Controller
             'maximum_level' => 'nullable|integer|min:0',
             'unit_of_measure' => 'required|string',
             'unit_price' => 'nullable|numeric|min:0',
+            'category' => 'nullable|string|max:100',
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
         $item = InventoryItem::create([
@@ -56,13 +62,13 @@ class InventoryController extends Controller
 
         $this->auditService->log($request->user(), 'created', 'inventory', $item);
 
-        return response()->json($item->fresh(), 201);
+        return response()->json($item->fresh()->load(['creator', 'department', 'movements']), 201);
     }
 
     public function show($id)
     {
         $inventoryItem = InventoryItem::find($id);
-        return response()->json($inventoryItem->load(['creator', 'movements.performer']));
+        return response()->json($inventoryItem->load(['creator', 'department', 'movements.performer']));
     }
 
     public function update(Request $request, $id)
@@ -74,6 +80,8 @@ class InventoryController extends Controller
             'maximum_level' => 'nullable|integer|min:0',
             'unit_of_measure' => 'sometimes|string',
             'unit_price' => 'nullable|numeric|min:0',
+            'category' => 'nullable|string|max:100',
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
     $inventoryItem = InventoryItem::find($id);
@@ -92,7 +100,7 @@ class InventoryController extends Controller
             $validated
         );
 
-        return response()->json($inventoryItem->fresh());
+        return response()->json($inventoryItem->fresh()->load(['department']));
     }
 
     public function adjustStock(Request $request, InventoryItem $inventoryItem)
