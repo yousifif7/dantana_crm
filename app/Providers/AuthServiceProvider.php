@@ -13,8 +13,9 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // Map models to their policies here
-        \App\Models\InventoryItem::class => \App\Policies\InventoryPolicy::class,
+    // Map models to their policies here
+    \App\Models\InventoryItem::class => \App\Policies\InventoryPolicy::class,
+    \App\Models\Department::class => \App\Policies\DepartmentPolicy::class,
     ];
 
     /**

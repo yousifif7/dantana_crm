@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class AuditService
 {
     public function log(
-        User $user,
+        ?User $user,
         string $action,
         string $module,
         ?Model $model = null,
@@ -19,7 +19,7 @@ class AuditService
         // auditable_type is non-nullable in the schema (morphs), so ensure we always provide a string.
         // Use 'system' as a generic placeholder for module-level or non-model events.
         return AuditLog::create([
-            'user_id' => $user->id,
+            'user_id' => $user?->id,
             'action' => $action,
             'module' => $module,
             'auditable_type' => $model ? get_class($model) : 'system',

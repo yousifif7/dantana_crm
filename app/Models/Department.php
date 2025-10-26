@@ -11,7 +11,9 @@ class Department extends Model
 
     protected $fillable = [
         'name', 'code', 'description', 'general_manager_id',
-        'department_head_id', 'is_active'
+        'department_head_id', 'is_active',
+        // extended fields
+        'address', 'phone', 'contact_email', 'city', 'state', 'postal_code', 'country', 'extra_info'
     ];
 
     protected $casts = ['is_active' => 'boolean'];

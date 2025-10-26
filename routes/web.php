@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\InventoryItem;
 use App\Models\ProductionRecord;
 use App\Models\Transaction;
+use App\Http\Controllers\DepartmentController;
 
 Route::get('/dashboard', function () {
 	// Provide server-side data required for the Blade add-employee form and
@@ -46,4 +47,24 @@ Route::get('/register', function () {
 // Provide a web POST endpoint that the Blade Add Employee form can submit to.
 // This keeps the existing Blade form working (it uses route('dashboard.users.store')).
 Route::post('/dashboard/users', [DashboardController::class, 'storeUser'])->name('dashboard.users.store');
+
+// Allow Blade to submit department creation from the dashboard (normal form submit)
+Route::post('/dashboard/departments', [DepartmentController::class, 'store'])->name('dashboard.departments.store');
+Route::put('/dashboard/departments/{department}', [DepartmentController::class, 'update'])->name('dashboard.departments.update');
+// Route::delete('/dashboard/departments/{department}', [DepartmentController::class, 'destroy'])->name('dashboard.departments.destroy');
+Route::delete('/departments/delete/{department}', [DepartmentController::class, 'destroy']);
+
+// Temporary debug endpoint to inspect the authenticated user and role from the browser.
+// Remove this route after debugging session/cookie issues.
+use Illuminate\Support\Facades\Auth;
+
+Route::get('/debug/whoami', function () {
+	$user = Auth::user();
+	if (! $user) return response()->json(['user' => null, 'message' => 'guest']);
+	return response()->json(['user' => [
+		'id' => $user->id,
+		'email' => $user->email ?? null,
+		'role' => $user->role->name ?? null,
+	]]);
+});
 

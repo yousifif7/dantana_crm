@@ -450,6 +450,17 @@
             background-color: #5a6268;
         }
     </style>
+    <script>
+        // Defensive wiring for Create Division button (kept outside CSS)
+        try {
+            document.addEventListener('DOMContentLoaded', function() {
+                const btn = document.getElementById('btnCreateDivision');
+                if (btn) btn.addEventListener('click', function(e){ e.preventDefault(); if (typeof openDepartmentModal === 'function') openDepartmentModal(); else {
+                    const modal = document.getElementById('departmentCreateModal'); if (modal) modal.classList.add('active');
+                }});
+            });
+        } catch (e) { console.error('Failed to attach Create Division handler', e); }
+    </script>
 </head>
 <body>
     <aside class="sidebar">
@@ -522,6 +533,8 @@
                     <div class="metric-value" id="overviewProduction">{{ $metrics['production_records'] ?? 0 }}</div>
                 </div>
             </div>
+
+                <!-- Department/Division Modal removed from inside the page to be rendered globally later -->
 
             <div class="charts-section">
                 <div class="chart-card">
@@ -649,8 +662,40 @@
                 <h1 class="page-title" style="margin: 0;">Staff Management</h1>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
+                    <button id="btnCreateDivision" class="btn-secondary" onclick="openDepartmentModal()">Create Division</button>
                     <button class="btn-secondary" onclick="openRolesModal()">Manage Roles & Permissions</button>
                 </div>
+                <script>
+                    // Attach a robust click handler immediately after the buttons render.
+                    // This ensures the Create Division button works even if inline onclick
+                    // handlers are blocked or JS earlier in the file errors out.
+                    (function(){
+                        try {
+                            const btn = document.getElementById('btnCreateDivision');
+                            if (!btn) return;
+                            // remove any duplicate handlers to avoid double calls
+                            btn.replaceWith(btn.cloneNode(true));
+                            const newBtn = document.getElementById('btnCreateDivision');
+                            newBtn.addEventListener('click', function(e){
+                                e.preventDefault();
+                                try {
+                                    if (typeof window.openDepartmentModal === 'function') {
+                                        console.debug('Create Division clicked - invoking openDepartmentModal');
+                                        window.openDepartmentModal();
+                                    } else {
+                                        console.warn('openDepartmentModal not defined, opening modal directly');
+                                        const modal = document.getElementById('departmentCreateModal');
+                                        if (modal) modal.classList.add('active');
+                                    }
+                                } catch (err) {
+                                    console.error('Error opening department modal', err);
+                                    const modal = document.getElementById('departmentCreateModal');
+                                    if (modal) modal.classList.add('active');
+                                }
+                            });
+                        } catch (e) { console.error('Failed to attach create-division handler', e); }
+                    })();
+                </script>
             </div>
             
             <div class="metrics-grid">
@@ -681,7 +726,7 @@
                                 <th>Department</th>
                                 <th>Employees</th>
                                 <th>Avg Age</th>
-                                <th>Actions</th>
+                                {{-- <th>Actions</th> --}}
                             </tr>
                         </thead>
                         <tbody id="staffTableBody">
@@ -690,11 +735,30 @@
                                     <td>{{ $department->name }}</td>
                                     <td>{{ $department->users()->count() }}</td>
                                     <td>{{ round($department->users()->avg('age') ?? 0, 1) }}</td>
-                                    <td>
+                                    {{-- <td>
                                         <button class="btn-edit" onclick="viewDepartment({{ $department->id }})">View</button>
-                                    </td>
+                                    </td> --}}
                                 </tr>
                             @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Departments</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Code</th>
+                                <th>Contact Email</th>
+                                <th>Phone</th>
+                                <th>City</th>
+                                <th>Country</th>
+                                <th>Employees</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="departmentsDetailBody">
                         </tbody>
                     </table>
                 </div>
@@ -1036,6 +1100,68 @@
         </div>
     </div>
 
+    <!-- Department/Division Modal (global, same placement as Staff Modal) -->
+    <div id="departmentCreateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Create Division</div>
+            <form id="departmentForm" method="POST" action="{{ route('dashboard.departments.store') }}">
+                @csrf
+                <div class="form-group">
+                    <label>Division Name</label>
+                    <input type="text" id="deptName" required>
+                </div>
+                <div class="form-group">
+                    <label>Code</label>
+                    <input type="text" id="deptCode" required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="deptDescription" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea id="deptAddress" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" id="deptPhone">
+                </div>
+                <div class="form-group">
+                    <label>Contact Email</label>
+                    <input type="email" id="deptEmail">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>City</label>
+                        <input type="text" id="deptCity">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>State</label>
+                        <input type="text" id="deptState">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Postal Code</label>
+                        <input type="text" id="deptPostal">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Country</label>
+                        <input type="text" id="deptCountry">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Extra Info</label>
+                    <textarea id="deptExtra" rows="2"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('departmentCreateModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
         <!-- Roles & Permissions Modal -->
         <div id="rolesModal" class="modal">
             <div class="modal-content" style="max-width:900px;">
@@ -1183,6 +1309,8 @@
 
                 // Scroll to top for better UX
                 window.scrollTo({top:0, behavior:'smooth'});
+                // Persist active page so a refresh keeps the same tab
+                try { localStorage.setItem('dantata.activePage', pageId); } catch (e) {}
             } catch (e) {
                 console.error('navigateTo error', e);
             }
@@ -1219,11 +1347,83 @@
             } catch (e) { console.error('openInventoryModal', e); }
         }
 
+        // On page load, restore last active page (if any)
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const saved = localStorage.getItem('dantata.activePage');
+                if (saved) {
+                    // Try to find a nav element whose onclick references the page id
+                    const nav = Array.from(document.querySelectorAll('.nav-item')).find(n => (n.getAttribute('onclick') || '').indexOf(`'${saved}'`) !== -1 || (n.getAttribute('onclick') || '').indexOf(`\"${saved}\"`) !== -1);
+                    navigateTo(saved, nav || null);
+                }
+            } catch (e) { console.error('Failed to restore active page', e); }
+        });
+
         function openStaffModal() {
             try {
                 document.getElementById('staffForm')?.reset();
                 document.getElementById('staffModal')?.classList.add('active');
             } catch (e) { console.error('openStaffModal', e); }
+        }
+
+        function openDepartmentModal() {
+            try {
+                document.getElementById('departmentForm')?.reset();
+                const header = document.querySelector('#departmentCreateModal .modal-header'); if (header) header.textContent = 'Create Division';
+                window.currentDepartmentEditId = null;
+                const modal = document.getElementById('departmentCreateModal');
+                if (modal) {
+                    modal.classList.add('active');
+                }
+                // focus first input for convenience
+                setTimeout(() => { try { document.getElementById('deptName')?.focus(); } catch(e){} }, 80);
+                // ensure the form will POST to create by default (remove method override)
+                const form = document.getElementById('departmentForm');
+                if (form) {
+                    form.action = '/dashboard/departments';
+                    // remove hidden _method if present
+                    const methodInput = form.querySelector('input[name="_method"]');
+                    if (methodInput) methodInput.remove();
+                }
+            } catch (e) { console.error('openDepartmentModal', e); }
+        }
+
+        async function saveDepartment(e) {
+            e.preventDefault();
+            try {
+                const payload = {
+                    name: document.getElementById('deptName').value,
+                    code: document.getElementById('deptCode').value,
+                    description: document.getElementById('deptDescription')?.value || null,
+                    address: document.getElementById('deptAddress')?.value || null,
+                    phone: document.getElementById('deptPhone')?.value || null,
+                    contact_email: document.getElementById('deptEmail')?.value || null,
+                    city: document.getElementById('deptCity')?.value || null,
+                    state: document.getElementById('deptState')?.value || null,
+                    postal_code: document.getElementById('deptPostal')?.value || null,
+                    country: document.getElementById('deptCountry')?.value || null,
+                    extra_info: document.getElementById('deptExtra')?.value || null,
+                };
+
+                let res;
+                if (window.currentDepartmentEditId) {
+                    // Use web routes so session cookie auth works (no page reload)
+                    res = await apiFetch(`/dashboard/departments/${window.currentDepartmentEditId}`, { method: 'PUT', body: payload });
+                } else {
+                    res = await apiFetch('/dashboard/departments', { method: 'POST', body: payload });
+                }
+
+                closeModal('departmentCreateModal');
+                await loadAllData();
+                alert('Division saved successfully');
+            } catch (err) {
+                console.error('Failed to save division', err);
+                try {
+                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
+                    if (json && json.message) alert('Failed: ' + json.message);
+                    else alert('Failed to save division');
+                } catch(e) { alert('Failed to save division'); }
+            }
         }
 
         function openProductionModal() {
@@ -1250,7 +1450,10 @@
         function closeModal(id) {
             try {
                 const el = document.getElementById(id);
-                if (el) el.classList.remove('active');
+                if (el) {
+                    el.classList.remove('active');
+                    try { el.style.display = ''; el.style.zIndex = ''; } catch(e){}
+                }
             } catch (e) { console.error('closeModal', e); }
         }
 
@@ -1271,9 +1474,19 @@
                 headers['Content-Type'] = 'application/json';
                 opts.body = JSON.stringify(opts.body);
             }
+            // For state-changing requests, include Laravel CSRF token from meta so session-authenticated
+            try {
+                const method = (opts.method || 'GET').toUpperCase();
+                if (method !== 'GET') {
+                    const meta = document.querySelector('meta[name="csrf-token"]');
+                    if (meta) headers['X-CSRF-TOKEN'] = meta.getAttribute('content');
+                }
+            } catch(e) {}
 
             return fetch(path, Object.assign({
-                credentials: 'same-origin',
+                // use 'include' to ensure cookies are sent even when using a dev server
+                // or slightly differing origins during local development
+                credentials: 'include',
                 headers
             }, opts)).then(async res => {
                 if (!res.ok) {
@@ -1704,6 +1917,36 @@
                             </tr>
                         `;
                     }).join('');
+                    // Also populate the detailed departments table if present
+                    const detailTbody = document.getElementById('departmentsDetailBody');
+                    if (detailTbody) {
+                        detailTbody.innerHTML = (renderList || []).map(d => {
+                            const usersCount = (d.users_count !== undefined && d.users_count !== null)
+                                ? d.users_count
+                                : (Array.isArray(d.users) ? d.users.length : (d.user_count ?? 0));
+                            const code = d.code || '';
+                            const email = d.contact_email || '';
+                            const phone = d.phone || '';
+                            const city = d.city || '';
+                            const country = d.country || '';
+                            return `
+                                <tr>
+                                    <td>${escapeHtml(d.name)}</td>
+                                    <td>${escapeHtml(code)}</td>
+                                    <td>${escapeHtml(email)}</td>
+                                    <td>${escapeHtml(phone)}</td>
+                                    <td>${escapeHtml(city)}</td>
+                                    <td>${escapeHtml(country)}</td>
+                                            <td>${usersCount}</td>
+                                            <td>
+                                                <button class="btn-edit" onclick="viewDepartment(${d.id})">View Staff</button>
+                                                <button class="btn-secondary" onclick="editDepartment(${d.id})">Edit</button>
+                                                <button class="btn-delete" onclick="deleteDepartment(${d.id})">Delete</button>
+                                            </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
         }
 
         // Show department details and its users in a modal. Attempts to use
@@ -1744,13 +1987,55 @@
             }
         }
 
+        // Edit an existing department: load into the create modal for editing
+        async function editDepartment(id) {
+            try {
+                const d = await apiFetch(`/api/departments/${id}`);
+                if (!d) throw new Error('Not found');
+                // populate form fields
+                document.getElementById('deptName').value = d.name || '';
+                document.getElementById('deptCode').value = d.code || '';
+                document.getElementById('deptDescription').value = d.description || '';
+                document.getElementById('deptAddress').value = d.address || '';
+                document.getElementById('deptPhone').value = d.phone || '';
+                document.getElementById('deptEmail').value = d.contact_email || '';
+                document.getElementById('deptCity').value = d.city || '';
+                document.getElementById('deptState').value = d.state || '';
+                document.getElementById('deptPostal').value = d.postal_code || '';
+                document.getElementById('deptCountry').value = d.country || '';
+                document.getElementById('deptExtra').value = d.extra_info || '';
+                // Set edit mode and open modal. Saving will be performed via AJAX (saveDepartment).
+                window.currentDepartmentEditId = id;
+                const header = document.querySelector('#departmentCreateModal .modal-header'); if (header) header.textContent = 'Edit Division';
+                const modal = document.getElementById('departmentCreateModal'); if (modal) modal.classList.add('active');
+            } catch (err) {
+                console.error('Failed to load department for edit', err);
+                alert('Failed to load division for editing');
+            }
+        }
+
+        async function deleteDepartment(id) {
+            if (!confirm('Delete this division? This action cannot be undone.')) return;
+            try {
+                // Use the web route so the current session cookie (auth) is applied and CSRF is handled by apiFetch
+                const res = await apiFetch(`/departments/delete/${id}`, { method: 'DELETE' });
+                await loadAllData();
+                if (res && res.message) alert(res.message);
+                else alert('Division deleted');
+            } catch (err) {
+                console.error('Failed to delete department', err);
+                alert('Failed to delete division - check permissions');
+            }
+        }
+
         // Food Division helpers: create or mark an existing department as Food Division
         async function createFoodDivision() {
             if (!confirm('Create a new department named "Food Division"?')) return;
             try {
                 // Department creation requires a unique code. Generate a sensible default.
                 const code = 'FOOD';
-                const res = await apiFetch('/api/departments', { method: 'POST', body: { name: 'Food Division', code: code, description: 'Auto-created Food Division' } });
+                // Use web route so session auth + CSRF are applied
+                const res = await apiFetch('/dashboard/departments', { method: 'POST', body: { name: 'Food Division', code: code, description: 'Auto-created Food Division' } });
                 if (res && res.id) {
                     alert('Food Division created. Reloading...');
                     window.location.reload();
@@ -1779,7 +2064,8 @@
             if (!id) return alert('Select a department first');
             if (!confirm('Rename selected department to "Food Division"? This will change the department name.')) return;
             try {
-                const res = await apiFetch(`/api/departments/${id}`, { method: 'PUT', body: { name: 'Food Division' } });
+                // Use web route so session auth + CSRF are applied
+                const res = await apiFetch(`/dashboard/departments/${id}`, { method: 'PUT', body: { name: 'Food Division' } });
                 alert('Department renamed. Reloading...');
                 window.location.reload();
             } catch (err) {
@@ -2516,6 +2802,7 @@
             const staffForm = document.getElementById('staffForm'); if (staffForm) staffForm.onsubmit = saveStaff;
             const prodForm = document.getElementById('productionForm'); if (prodForm) prodForm.onsubmit = saveProduction;
             const procForm = document.getElementById('processForm'); if (procForm) procForm.onsubmit = saveProcess;
+            const deptForm = document.getElementById('departmentForm'); if (deptForm) deptForm.onsubmit = saveDepartment;
 
             // Login button should take user to the dedicated login page; logout still calls API.
             const loginBtn = document.getElementById('loginBtn'); if (loginBtn) loginBtn.onclick = () => window.location.href = '/login';
