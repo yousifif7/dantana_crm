@@ -219,13 +219,6 @@
             color: #721c24;
         }
 
-        .staff-details-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
         .efficiency-circle {
             width: 180px;
             height: 180px;
@@ -669,10 +662,10 @@
         </div>
 
         <!-- Staff Management Page -->
-    <div id="staff" class="page{{ ($activePageId ?? '') === 'staff' ? ' active' : '' }}">
+    <div id="staff" class="page staff-page{{ ($activePageId ?? '') === 'staff' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Staff Management</h1>
-                <div style="display:flex;gap:8px;align-items:center;">
+                <div class="staff-toolbar">
                     <button class="btn-primary" onclick="openStaffModal()">Add Employee</button>
                     <button id="btnCreateDivision" class="btn-secondary" onclick="openDepartmentModal()">Create Division</button>
                     <button class="btn-secondary" onclick="openRolesModal()">Manage Roles & Permissions</button>
@@ -730,74 +723,80 @@
             </div>
 
             <div class="staff-details-grid">
-                <div class="chart-card">
+                <div class="chart-card staff-summary-card">
                     <div class="chart-title">Staff Details</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Department</th>
-                                <th>Employees</th>
-                                <th>Avg Age</th>
-                                {{-- <th>Actions</th> --}}
-                            </tr>
-                        </thead>
-                        <tbody id="staffTableBody">
-                            @foreach($departments ?? [] as $department)
+                    <div class="table-scroll">
+                        <table class="staff-summary-table">
+                            <thead>
                                 <tr>
-                                    <td>{{ $department->name }}</td>
-                                    <td>{{ $department->users()->count() }}</td>
-                                    <td>{{ round($department->users()->avg('age') ?? 0, 1) }}</td>
-                                    {{-- <td>
-                                        <button class="btn-edit" onclick="viewDepartment({{ $department->id }})">View</button>
-                                    </td> --}}
+                                    <th>Department</th>
+                                    <th>Employees</th>
+                                    <th>Avg Age</th>
+                                    <th>Actions</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody id="staffTableBody">
+                                @foreach($departments ?? [] as $department)
+                                    <tr>
+                                        <td>{{ $department->name }}</td>
+                                        <td>{{ $department->users_count ?? $department->users()->count() }}</td>
+                                        <td>{{ round($department->users()->avg('age') ?? 0, 1) }}</td>
+                                        <td>
+                                            <button type="button" class="btn-edit btn-sm" onclick="viewDepartment({{ $department->id }})">View</button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card staff-departments-card">
                     <div class="chart-title">Departments</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Code</th>
-                                <th>Contact Email</th>
-                                <th>Phone</th>
-                                <th>City</th>
-                                <th>Country</th>
-                                <th>Employees</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="departmentsDetailBody">
-                        </tbody>
-                    </table>
+                    <div class="table-scroll">
+                        <table class="staff-departments-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>Contact Email</th>
+                                    <th>Phone</th>
+                                    <th>City</th>
+                                    <th>Country</th>
+                                    <th>Employees</th>
+                                    <th class="actions-col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="departmentsDetailBody">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card staff-chart-card">
                     <div class="chart-title">Absenteeism</div>
                     <canvas id="absenteeismChart"></canvas>
                 </div>
             </div>
 
-            <div class="chart-card" style="margin-top:24px;">
+            <div class="chart-card staff-employees-card">
                 <div class="chart-title">All Employees</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Employee ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employeesTableBody">
-                        <tr><td colspan="7" class="empty-state">Loading employees…</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll">
+                    <table class="staff-employees-table">
+                        <thead>
+                            <tr>
+                                <th>Employee ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th class="actions-col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody">
+                            <tr><td colspan="7" class="empty-state">Loading employees…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         @php
@@ -1355,29 +1354,29 @@
 
         <!-- Roles & Permissions Modal -->
         <div id="rolesModal" class="modal">
-            <div class="modal-content" style="max-width:900px;">
+            <div class="modal-content modal-content-wide">
                 <div class="modal-header">Roles & Permissions</div>
-                <div style="display:flex;gap:16px;align-items:flex-start;">
-                    <div style="flex:0 0 260px; border-right:1px solid #eee;padding-right:12px;">
-                        <div style="font-weight:600;margin-bottom:8px;">Roles</div>
-                        <div id="rolesList" style="max-height:360px;overflow:auto;"></div>
-                        <div style="margin-top:12px;">
-                            <input type="text" id="newRoleName" placeholder="New role display name" style="width:100%;padding:6px;margin-bottom:6px;" />
-                            <button class="btn-primary" onclick="createRole()">Create Role</button>
+                <div class="roles-modal-body">
+                    <aside class="roles-modal-sidebar">
+                        <div class="roles-panel-title">Roles</div>
+                        <div id="rolesList" class="roles-list"></div>
+                        <div class="roles-create-form">
+                            <input type="text" id="newRoleName" placeholder="New role display name" />
+                            <button type="button" class="btn-primary" onclick="createRole()">Create Role</button>
                         </div>
-                    </div>
-                    <div style="flex:1; padding-left:12px;">
+                    </aside>
+                    <div class="roles-modal-main">
                         <div id="rolePermissionsArea">
-                                <div style="font-weight:600;margin-bottom:8px;" id="selectedRoleTitle">Select a role to edit permissions</div>
-                                <div id="permissionsContainer" style="max-height:260px;overflow:auto;border:1px solid #f0f0f0;padding:8px;border-radius:6px;background:#fff;"></div>
-                                <div style="margin-top:10px;">
-                                    <div style="font-weight:600;margin-bottom:6px;">Role Members</div>
-                                    <div id="roleMembersList" style="max-height:120px;overflow:auto;border:1px dashed #eee;padding:8px;border-radius:6px;background:#fafafa;"></div>
-                                </div>
+                            <div class="roles-panel-title" id="selectedRoleTitle">Select a role to edit permissions</div>
+                            <div id="permissionsContainer" class="permissions-container"></div>
+                            <div class="role-members-section">
+                                <div class="roles-panel-title">Role Members</div>
+                                <div id="roleMembersList" class="role-members-list"></div>
                             </div>
-                        <div style="margin-top:12px;text-align:right;">
-                            <button class="btn-secondary" onclick="closeModal('rolesModal')">Close</button>
-                            <button class="btn-primary" onclick="saveRolePermissions()">Save Permissions</button>
+                        </div>
+                        <div class="roles-modal-actions">
+                            <button type="button" class="btn-secondary" onclick="closeModal('rolesModal')">Close</button>
+                            <button type="button" class="btn-primary" onclick="saveRolePermissions()">Save Permissions</button>
                         </div>
                     </div>
                 </div>
@@ -1759,7 +1758,7 @@
                     <td>${escapeHtml(role)}</td>
                     <td>${escapeHtml(dept)}</td>
                     <td><span class="status-badge ${active ? 'status-approved' : 'status-rejected'}">${active ? 'Active' : 'Inactive'}</span></td>
-                    <td class="action-btns">${actions}</td>
+                    <td class="actions-col"><div class="action-btns">${actions}</div></td>
                 </tr>`;
             }).join('');
         }
@@ -2197,7 +2196,9 @@
                                 <td>${usersCount}</td>
                                 <td>${avgAge}</td>
                                 <td>
-                                    <button class="btn-edit btn-sm" onclick="viewDepartment(${d.id})">View</button>
+                                    <div class="action-btns">
+                                        <button type="button" class="btn-edit btn-sm" onclick="viewDepartment(${d.id})">View</button>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -2223,10 +2224,12 @@
                                     <td>${escapeHtml(city)}</td>
                                     <td>${escapeHtml(country)}</td>
                                             <td>${usersCount}</td>
-                                            <td>
-                                                <button class="btn-edit btn-sm" onclick="viewDepartment(${d.id})">View Staff</button>
-                                                <button class="btn-secondary btn-sm" onclick="editDepartment(${d.id})">Edit</button>
-                                                <button class="btn-delete btn-sm" onclick="deleteDepartment(${d.id})">Delete</button>
+                                            <td class="actions-col">
+                                                <div class="action-btns">
+                                                    <button type="button" class="btn-edit btn-sm" onclick="viewDepartment(${d.id})">View</button>
+                                                    <button type="button" class="btn-secondary btn-sm" onclick="editDepartment(${d.id})">Edit</button>
+                                                    <button type="button" class="btn-delete btn-sm" onclick="deleteDepartment(${d.id})">Delete</button>
+                                                </div>
                                             </td>
                                 </tr>
                             `;
@@ -2349,9 +2352,9 @@
                 const rl = document.getElementById('rolesList');
                 if (rl) {
                     rl.innerHTML = (rolesCache || []).map(r => `
-                        <div style="padding:8px;border-bottom:1px solid #f6f6f6;cursor:pointer;" onclick="selectRole(${r.id})">
-                            <div style="font-weight:600;">${escapeHtml(r.display_name || r.name)}</div>
-                            <div style="font-size:12px;color:#666;">${escapeHtml((r.description || ''))}</div>
+                        <div class="role-list-item${Number(selectedRoleId) === Number(r.id) ? ' active' : ''}" data-role-id="${r.id}" onclick="selectRole(${r.id})">
+                            <div class="role-list-name">${escapeHtml(r.display_name || r.name)}</div>
+                            <div class="role-list-desc">${escapeHtml((r.description || ''))}</div>
                         </div>
                     `).join('');
                 }
@@ -2369,6 +2372,9 @@
         async function selectRole(id) {
             try {
                 selectedRoleId = id;
+                document.querySelectorAll('#rolesList .role-list-item').forEach(el => {
+                    el.classList.toggle('active', Number(el.dataset.roleId) === Number(id));
+                });
                 // find role in cache (if role has permissions preloaded they may be available)
                 let role = rolesCache && rolesCache.find(r => r.id == id);
                 if (!role || !role.permissions) {
@@ -2395,16 +2401,19 @@
 
                 let html = '';
                 for (const mod of Object.keys(grouped)) {
-                    html += `<div style="margin-bottom:10px;"><div style="font-weight:700;margin-bottom:6px;">${escapeHtml(mod)}</div>`;
-                    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+                    html += `<div class="permissions-module"><div class="permissions-module-title">${escapeHtml(mod)}</div>`;
+                    html += '<div class="permissions-list">';
                     for (const p of grouped[mod]) {
                         const has = !!rolePerms[p.id];
                         const access = rolePerms[p.id]?.pivot?.access_level || rolePerms[p.id]?.access_level || 'view';
                         html += `
-                            <label style="display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #fafafa;border-radius:4px;">
+                            <label class="permission-row">
                                 <input type="checkbox" data-perm-id="${p.id}" ${has ? 'checked' : ''} onchange="onPermToggle(this)">
-                                <div style="flex:1;"><div style="font-weight:600;">${escapeHtml(p.display_name || p.name)}</div><div style="font-size:12px;color:#666;">${escapeHtml(p.description || '')}</div></div>
-                                <select data-perm-id-select="${p.id}" style="width:120px;" ${has ? '' : 'disabled'}>
+                                <div class="permission-info">
+                                    <div class="permission-name">${escapeHtml(p.display_name || p.name)}</div>
+                                    <div class="permission-desc">${escapeHtml(p.description || '')}</div>
+                                </div>
+                                <select class="permission-access-select" data-perm-id-select="${p.id}" ${has ? '' : 'disabled'}>
                                     <option value="view" ${access==='view'?'selected':''}>View</option>
                                     <option value="edit" ${access==='edit'?'selected':''}>Edit</option>
                                     <option value="approve" ${access==='approve'?'selected':''}>Approve</option>
@@ -2423,14 +2432,17 @@
                 if (membersEl) {
                     const memberHtml = (usersCache || []).map(u => {
                         const has = (u.role_id && Number(u.role_id) === Number(id));
-                        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px;border-bottom:1px solid #f6f6f6;">
-                            <div style="flex:1;">${escapeHtml((u.first_name||'') + ' ' + (u.last_name||''))} <div style="font-size:12px;color:#666;">${escapeHtml(u.email||'')}</div></div>
-                            <div style="margin-left:12px;">
-                                ${has ? `<button class="btn-secondary" onclick="removeRoleFromUser(${u.id})">Remove</button>` : `<button class="btn-primary" onclick="assignRoleToUser(${u.id})">Assign</button>`}
+                        return `<div class="role-member-row">
+                            <div class="role-member-info">
+                                <div>${escapeHtml((u.first_name||'') + ' ' + (u.last_name||''))}</div>
+                                <div class="role-member-email">${escapeHtml(u.email||'')}</div>
+                            </div>
+                            <div class="role-member-actions">
+                                ${has ? `<button type="button" class="btn-secondary btn-sm" onclick="removeRoleFromUser(${u.id})">Remove</button>` : `<button type="button" class="btn-primary btn-sm" onclick="assignRoleToUser(${u.id})">Assign</button>`}
                             </div>
                         </div>`;
                     }).join('');
-                    membersEl.innerHTML = memberHtml || '<div style="color:#666;">No users found.</div>';
+                    membersEl.innerHTML = memberHtml || '<div class="empty-hint">No users found.</div>';
                 }
             } catch (err) {
                 console.error('Failed to load role details', err);
