@@ -43,11 +43,11 @@ class AuthService
         return User::create($data);
     }
 
-    private function generateEmployeeId(): string
+    public function generateEmployeeId(): string
     {
         $lastUser = User::latest('id')->first();
         $lastId = $lastUser ? intval(substr($lastUser->employee_id, 3)) : 0;
-        
+
         return 'EMP' . str_pad($lastId + 1, 5, '0', STR_PAD_LEFT);
     }
 
@@ -69,9 +69,13 @@ class AuthService
 
     public function verifyTwoFactor(User $user, string $code): bool
     {
-        // Implement TOTP verification here
-        // This would use a package like pragmarx/google2fa
-        return true;
+        if (!$user->two_factor_enabled || !$user->two_factor_secret) {
+            return false;
+        }
+
+        $google2fa = new \PragmaRX\Google2FA\Google2FA();
+
+        return $google2fa->verifyKey(decrypt($user->two_factor_secret), $code);
     }
 }
 

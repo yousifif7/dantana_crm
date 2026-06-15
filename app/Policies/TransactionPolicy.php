@@ -51,6 +51,10 @@ class TransactionPolicy
 
     public function approve(User $user, Transaction $transaction): bool
     {
+        if (in_array(strtolower($user->role->name), ['md', 'managing_director', 'chairman'])) {
+            return $user->canApprove();
+        }
+
         return $user->canApprove() && $user->hasPermission('transactions.approve', 'approve');
     }
 }

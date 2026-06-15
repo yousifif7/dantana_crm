@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             InventorySeeder::class,
             ProductionSeeder::class,
             ProcessSeeder::class,
+            PurchaseOrderSeeder::class,
+            NotificationSeeder::class,
         ]);
     }
 }

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dantata Foods - Dashboard</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="{{ asset('css/showcase.css') }}">
+    <script>window.INITIAL_PAGE = @json($page ?? null); window.ACTIVE_PAGE_ID = @json($activePageId ?? 'ai-dashboard');</script>
+    <script src="{{ asset('js/app-utils.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -196,9 +199,9 @@
 
         .status-badge {
             padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .status-in-stock {
@@ -249,6 +252,42 @@
             padding: 25px;
             border-radius: 8px;
             margin-bottom: 30px;
+        }
+
+        .process-panel .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .process-table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+        }
+
+        .process-table th,
+        .process-table td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .process-table th {
+            font-weight: 600;
+            color: #1e3a2e;
+            border-bottom: 2px solid #e0e0e0;
+            white-space: nowrap;
+        }
+
+        .process-table .actions-col {
+            min-width: 280px;
+        }
+
+        .process-table .action-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
         }
 
         .process-item {
@@ -320,20 +359,7 @@
             background-color: #f8fffe;
         }
 
-        .btn-primary {
-            background-color: #4a7cf6;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .btn-primary:hover {
-            background-color: #3a6ce6;
-        }
+        /* Buttons, tables, forms — styled in showcase.css */
 
         .section-header {
             display: flex;
@@ -345,34 +371,6 @@
         .action-btns {
             display: flex;
             gap: 10px;
-        }
-
-        .btn-edit {
-            background-color: #ffc107;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .btn-delete {
-            background-color: #dc3545;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .btn-edit:hover {
-            background-color: #e0a800;
-        }
-
-        .btn-delete:hover {
-            background-color: #c82333;
         }
 
         .modal {
@@ -435,20 +433,6 @@
             justify-content: flex-end;
             margin-top: 20px;
         }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
     </style>
     <script>
         // Defensive wiring for Create Division button (kept outside CSS)
@@ -474,40 +458,67 @@
             <div class="logo-subtext">FOODS</div>
         </div>
         <ul class="nav-menu">
-            {{-- <li class="nav-item" onclick="navigateTo('overview', this)">
-                <span>🏠</span> Overview
-            </li> --}}
+            <li class="nav-section-label">Operations</li>
             <li class="nav-item active" onclick="navigateTo('ai-dashboard', this)">
-                <span>📊</span> Dashboard
+                <span>📊</span> <span>Dashboard</span>
             </li>
             <li class="nav-item" onclick="navigateTo('oil-production', this)">
-                <span>💧</span> Oil Production
+                <span>💧</span> <span>Oil Production</span>
             </li>
             <li class="nav-item" onclick="navigateTo('food-division', this)">
-                <span>👥</span> Food Division
+                <span>🌾</span> <span>Food Division</span>
             </li>
             <li class="nav-item" onclick="navigateTo('inventory', this)">
-                <span>📦</span> Inventory Management
+                <span>📦</span> <span>Inventory</span>
             </li>
-            <li class="nav-item" onclick="navigateTo('staff', this)">
-                <span>📈</span> Staff Management
+            <li class="nav-item" onclick="navigateTo('procurement', this)">
+                <span>🛒</span> <span>Procurement</span>
             </li>
             <li class="nav-item" onclick="navigateTo('process', this)">
-                <span>⚙️</span> Process Management
+                <span>⚙️</span> <span>Processes</span>
+            </li>
+            <li class="nav-section-label">People</li>
+            <li class="nav-item" onclick="navigateTo('staff', this)">
+                <span>👥</span> <span>Staff</span>
+            </li>
+            <li class="nav-item" onclick="navigateTo('attendance', this)">
+                <span>🕐</span> <span>Attendance</span>
+            </li>
+            <li class="nav-section-label">Admin</li>
+            <li class="nav-item" onclick="navigateTo('reports', this)">
+                <span>📋</span> <span>Reports</span>
+            </li>
+            <li class="nav-item" onclick="navigateTo('notifications', this)">
+                <span>🔔</span> <span>Notifications</span>
+            </li>
+            <li class="nav-item" onclick="navigateTo('escalations', this)">
+                <span>⚠️</span> <span>Escalations</span>
+            </li>
+            <li class="nav-item" onclick="navigateTo('audit-logs', this)">
+                <span>📜</span> <span>Audit Logs</span>
             </li>
         </ul>
     </aside>
 
-    <main class="main-content">
-        <!-- Top-right user area (login/logout) -->
-        <div id="userArea" style="position: fixed; top: 18px; right: 28px; z-index:1200;">
-            <button id="loginBtn" class="btn-primary" style="display:none;">Login</button>
-            <div id="loggedInArea" style="display:none; background: white; padding:8px 12px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.1);">
-                <span id="currentUserName" style="margin-right:10px; font-weight:600;"></span>
-                <button id="logoutBtn" class="btn-secondary">Logout</button>
-            </div>
+    <div class="top-bar">
+        <div class="top-bar-title">Dantata Foods · Unified Business Management System</div>
+        <button class="notification-btn" onclick="navigateTo('notifications', null)" title="Notifications">
+            🔔
+            <span id="notificationBadge" class="notification-badge">0</span>
+        </button>
+        <div id="loggedInArea" class="user-chip" style="display:none;">
+            <div class="user-avatar" id="userAvatar">U</div>
+            <span id="currentUserName" style="font-weight:600;font-size:14px;"></span>
+            <button id="logoutBtn" class="btn-secondary btn-xs">Logout</button>
         </div>
-        <br><br>
+        <button id="loginBtn" class="btn-primary" style="display:none;">Login</button>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay"><div class="spinner"></div></div>
+
+    <main class="main-content">
+        <!-- Legacy user area hidden by showcase.css -->
+        <div id="userArea" style="display:none;"></div>
 
         <!-- Overview Page -->
         <div id="overview" class="page">
@@ -551,28 +562,28 @@
         </div>
 
         <!-- AI Dashboard Page -->
-        <div id="ai-dashboard" class="page active">
+        <div id="ai-dashboard" class="page{{ ($activePageId ?? 'ai-dashboard') === 'ai-dashboard' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Dashboard</h1>
                 <button class="btn-primary" onclick="openTransactionModal()">Add Transaction</button>
             </div>
-            
+            <p class="page-subtitle">Financial overview, revenue tracking, and transaction management</p>
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div class="metric-label">Total Revenue</div>
-                    <div class="metric-value" id="totalRevenue">$75,320</div>
+                    <div class="metric-value" id="totalRevenue">—</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Total Expenses</div>
-                    <div class="metric-value" id="totalExpenses">$21,800</div>
+                    <div class="metric-value" id="totalExpenses">—</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Net Profit</div>
-                    <div class="metric-value" id="netProfit">$53,520</div>
+                    <div class="metric-value" id="netProfit">—</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Profit Margin</div>
-                    <div class="metric-value" id="profitMargin">71%</div>
+                    <div class="metric-value" id="profitMargin">—</div>
                 </div>
             </div>
 
@@ -595,6 +606,7 @@
                             <th>Client Payment</th>
                             <th>Amount</th>
                             <th>Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -605,7 +617,7 @@
         </div>
 
         <!-- Inventory Page -->
-        <div id="inventory" class="page">
+        <div id="inventory" class="page{{ ($activePageId ?? '') === 'inventory' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Inventory</h1>
                 <button class="btn-primary" onclick="openInventoryModal()">Add Item</button>
@@ -614,7 +626,7 @@
             <div class="inventory-grid">
                 <div class="metric-card">
                     <div class="metric-label">Total Inventory</div>
-                    <div class="metric-value" id="totalInventory">15,000</div>
+                    <div class="metric-value" id="totalInventory">—</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Current Stock</div>
@@ -657,7 +669,7 @@
         </div>
 
         <!-- Staff Management Page -->
-    <div id="staff" class="page">
+    <div id="staff" class="page{{ ($activePageId ?? '') === 'staff' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Staff Management</h1>
                 <div style="display:flex;gap:8px;align-items:center;">
@@ -767,9 +779,27 @@
                     <canvas id="absenteeismChart"></canvas>
                 </div>
             </div>
-        </div>
 
-        <!-- Food Division Page -->
+            <div class="chart-card" style="margin-top:24px;">
+                <div class="chart-title">All Employees</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesTableBody">
+                        <tr><td colspan="7" class="empty-state">Loading employees…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
         @php
             // Try to find a department that represents Food Division (case-insensitive match)
             $foodDept = null;
@@ -778,7 +808,7 @@
             }
         @endphp
 
-        <div id="food-division" class="page">
+        <div id="food-division" class="page{{ ($activePageId ?? '') === 'food-division' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Food Division</h1>
                 <div style="display:flex;gap:8px;align-items:center;">
@@ -827,7 +857,7 @@
         </div>
 
         <!-- Oil Production Page -->
-        <div id="oil-production" class="page">
+        <div id="oil-production" class="page{{ ($activePageId ?? '') === 'oil-production' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Oil Production</h1>
                 <button class="btn-primary" onclick="openProductionModal()">Add Production</button>
@@ -837,19 +867,19 @@
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div class="metric-label">Total Production</div>
-                    <div class="metric-value">50,000<span style="font-size: 20px;">L</span></div>
+                    <div class="metric-value">—</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-label">Protection Today</div>
-                    <div class="metric-value">1,200<span style="font-size: 20px;">L</span></div>
+                    <div class="metric-label">Production Today</div>
+                    <div class="metric-value">—</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Downtime</div>
-                    <div class="metric-value">3<span style="font-size: 20px;">hrs</span></div>
+                    <div class="metric-value">—</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Efficiency</div>
-                    <div class="metric-value">92%</div>
+                    <div class="metric-value">—</div>
                 </div>
             </div>
 
@@ -880,6 +910,7 @@
                             <th>Quantity (L)</th>
                             <th>Efficiency</th>
                             <th>Downtime</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -890,22 +921,28 @@
         </div>
 
         <!-- Process Management Page -->
-        <div id="process" class="page">
+        <div id="process" class="page{{ ($activePageId ?? '') === 'process' ? ' active' : '' }}">
             <div class="section-header">
                 <h1 class="page-title" style="margin: 0;">Process Management</h1>
                 <button class="btn-primary" onclick="openProcessModal()">New Process</button>
             </div>
             
-            <div class="process-list">
+            <div class="data-panel process-panel">
                 <div class="chart-title" style="margin-bottom: 20px;">All Processes</div>
-                <div class="process-item process-header">
-                    <div>Name</div>
-                    <div>Status</div>
-                    <div>Assigned To</div>
-                    <div>Due Date</div>
-                    <div>Actions</div>
-                </div>
-                <div id="processTableBody">
+                <div class="table-scroll">
+                    <table class="process-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                                <th>Due Date</th>
+                                <th class="actions-col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody">
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -919,6 +956,129 @@
                     <span style="font-size: 24px;">🚚</span>
                     <span>Create Delivery Order</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Procurement Page -->
+        <div id="procurement" class="page{{ ($activePageId ?? '') === 'procurement' ? ' active' : '' }}">
+            <div class="section-header">
+                <h1 class="page-title" style="margin:0;">Procurement</h1>
+                <button class="btn-primary" onclick="ShowcaseModules.openPOModal()">New Purchase Order</button>
+            </div>
+            <p class="page-subtitle">Manage vendor orders, approvals, and fulfillment</p>
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-label">Pending Approval</div><div class="metric-value" id="poPending">—</div></div>
+                <div class="metric-card"><div class="metric-label">Approved Value</div><div class="metric-value" id="poTotalValue">—</div></div>
+            </div>
+            <div class="data-panel">
+                <table>
+                    <thead><tr><th>PO #</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Delivery</th><th>Actions</th></tr></thead>
+                    <tbody id="procurementTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Attendance Page -->
+        <div id="attendance" class="page{{ ($activePageId ?? '') === 'attendance' ? ' active' : '' }}">
+            <div class="section-header"><h1 class="page-title" style="margin:0;">Attendance</h1></div>
+            <p class="page-subtitle">Track daily check-ins and attendance records</p>
+            <div class="check-in-card">
+                <h3>Today's Attendance</h3>
+                <p>Check in when you arrive and check out when you leave.</p>
+                <div class="attendance-actions">
+                    <button class="btn-primary" onclick="ShowcaseModules.checkIn()">Check In</button>
+                    <button class="btn-secondary btn-sm check-out-btn" onclick="ShowcaseModules.checkOut()">Check Out</button>
+                </div>
+            </div>
+            <div class="data-panel">
+                <div class="chart-title">My Records</div>
+                <table>
+                    <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Remarks</th></tr></thead>
+                    <tbody id="attendanceTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reports Page -->
+        <div id="reports" class="page{{ ($activePageId ?? '') === 'reports' ? ' active' : '' }}">
+            <div class="section-header"><h1 class="page-title" style="margin:0;">Reports</h1></div>
+            <p class="page-subtitle">Generate and export business intelligence reports</p>
+            <div class="filter-bar">
+                <label>From <input type="date" id="reportStartDate"></label>
+                <label>To <input type="date" id="reportEndDate"></label>
+            </div>
+            <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);">
+                <div class="report-card">
+                    <h3>📊 Financial Report</h3>
+                    <p>Revenue, expenses, profit margin and transaction breakdown.</p>
+                    <div class="btn-group">
+                        <button class="btn-secondary" onclick="ShowcaseModules.previewReport('financial')">Preview</button>
+                        <button class="btn-primary" onclick="ShowcaseModules.exportReport('financial')">Export PDF</button>
+                    </div>
+                </div>
+                <div class="report-card">
+                    <h3>🏭 Production Report</h3>
+                    <p>Batch output, efficiency metrics and downtime analysis.</p>
+                    <div class="btn-group">
+                        <button class="btn-secondary" onclick="ShowcaseModules.previewReport('production')">Preview</button>
+                        <button class="btn-primary" onclick="ShowcaseModules.exportReport('production')">Export PDF</button>
+                    </div>
+                </div>
+                <div class="report-card">
+                    <h3>📦 Inventory Report</h3>
+                    <p>Stock levels, valuation and low-stock alerts.</p>
+                    <div class="btn-group">
+                        <button class="btn-secondary" onclick="ShowcaseModules.previewReport('inventory')">Preview</button>
+                    </div>
+                </div>
+            </div>
+            <div id="reportPreview" class="data-panel" style="display:none;margin-top:24px;"></div>
+        </div>
+
+        <!-- Notifications Page -->
+        <div id="notifications" class="page{{ ($activePageId ?? '') === 'notifications' ? ' active' : '' }}">
+            <div class="section-header">
+                <h1 class="page-title" style="margin:0;">Notifications</h1>
+                <button class="btn-secondary" onclick="ShowcaseModules.markAllRead()">Mark All Read</button>
+            </div>
+            <p class="page-subtitle">System alerts, approvals, and activity updates</p>
+            <div class="data-panel" id="notificationsList" style="padding:0;"></div>
+        </div>
+
+        <!-- Escalations Page -->
+        <div id="escalations" class="page{{ ($activePageId ?? '') === 'escalations' ? ' active' : '' }}">
+            <div class="section-header"><h1 class="page-title" style="margin:0;">Escalations</h1></div>
+            <p class="page-subtitle">Pending items requiring management attention</p>
+            <div class="data-panel">
+                <table>
+                    <thead><tr><th>Item</th><th>Reason</th><th>From</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="escalationsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Audit Logs Page -->
+        <div id="audit-logs" class="page{{ ($activePageId ?? '') === 'audit-logs' ? ' active' : '' }}">
+            <div class="section-header"><h1 class="page-title" style="margin:0;">Audit Logs</h1></div>
+            <p class="page-subtitle">Complete activity trail across all modules</p>
+            <div class="filter-bar">
+                <select id="auditModuleFilter" onchange="ShowcaseModules.loadAuditLogs()">
+                    <option value="">All Modules</option>
+                    <option value="finance">Finance</option>
+                    <option value="hr">HR</option>
+                    <option value="inventory">Inventory</option>
+                    <option value="production">Production</option>
+                    <option value="procurement">Procurement</option>
+                    <option value="process">Process</option>
+                    <option value="attendance">Attendance</option>
+                </select>
+                <button class="btn-secondary" onclick="ShowcaseModules.loadAuditLogs()">Refresh</button>
+            </div>
+            <div class="data-panel">
+                <table>
+                    <thead><tr><th>Timestamp</th><th>User</th><th>Module</th><th>Action</th><th>Target</th></tr></thead>
+                    <tbody id="auditTableBody"></tbody>
+                </table>
             </div>
         </div>
     </main>
@@ -941,7 +1101,7 @@
                     <input type="text" id="transactionDesc" required>
                 </div>
                 <div class="form-group">
-                    <label>Amount ($)</label>
+                    <label>Amount (₦)</label>
                     <input type="number" step="0.01" id="transactionAmount" required>
                 </div>
                 <div class="form-group">
@@ -1036,6 +1196,37 @@
         </div>
     </div>
 
+    <!-- Adjust Stock Modal -->
+    <div id="adjustStockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Adjust Stock</div>
+            <p style="margin-bottom:16px;color:#5c6b63;">Item: <strong id="adjustStockItemName"></strong> · Current: <strong id="adjustStockCurrent"></strong></p>
+            <form id="adjustStockForm" onsubmit="saveAdjustStock(event)">
+                <input type="hidden" id="adjustStockItemId">
+                <div class="form-group">
+                    <label>Adjustment Type</label>
+                    <select id="adjustStockType" required>
+                        <option value="in">Stock In (+)</option>
+                        <option value="out">Stock Out (−)</option>
+                        <option value="adjustment">Set Quantity</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="adjustStockQty" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Reason</label>
+                    <input type="text" id="adjustStockReason" required placeholder="e.g. Received shipment, Used in production">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('adjustStockModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Apply Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Staff Modal (Add Employee) -->
     <div id="staffModal" class="modal">
         <div class="modal-content">
@@ -1055,8 +1246,8 @@
             <form id="staffForm" method="POST" action="{{ route('dashboard.users.store') }}">
                 @csrf
                 <div class="form-group">
-                    <label>Employee ID</label>
-                    <input type="text" name="employee_id" required>
+                    <label>Employee ID <span style="font-weight:400;color:#888;">(optional — auto-generated)</span></label>
+                    <input type="text" name="employee_id" placeholder="Leave blank to auto-generate">
                 </div>
                 <div class="form-group">
                     <label>First Name</label>
@@ -1071,7 +1262,7 @@
                     <input type="email" name="email" required>
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label>Password <span id="staffPasswordHint" style="font-weight:400;color:#888;"></span></label>
                     <input type="password" name="password" required>
                 </div>
                 <div class="form-group">
@@ -1286,35 +1477,86 @@
         </div>
     </div>
 
+    <!-- Purchase Order Modal -->
+    <div id="poModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">New Purchase Order</div>
+            <form id="poForm" onsubmit="ShowcaseModules.savePO(event)">
+                <div class="form-group">
+                    <label>Vendor Name</label>
+                    <input type="text" id="poVendor" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="poDescription" rows="2"></textarea>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Item Name</label>
+                        <input type="text" id="poItemName" placeholder="e.g. Raw materials">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Quantity</label>
+                        <input type="number" id="poQty" value="1" min="1">
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Unit Price (₦)</label>
+                        <input type="number" id="poUnitPrice" step="0.01" min="0">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Total Amount (₦)</label>
+                        <input type="number" id="poAmount" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Category</label>
+                        <select id="poCategory">
+                            <option value="raw_materials">Raw Materials</option>
+                            <option value="packaging">Packaging</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="services">Services</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Expected Delivery</label>
+                        <input type="date" id="poDelivery">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="poNotes" rows="2"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('poModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Expose active users map to the client so JS can resolve user IDs to names
+        // Expose roles map for quick client-side lookups
         window.allUsers = {!! json_encode(($users ?? collect())->mapWithKeys(function($u){ return [$u->id => ($u->first_name . ' ' . $u->last_name)]; })) !!};
-        // Expose departments (including their users) for quick client-side viewing
+        window.allRoles = {!! json_encode(($roles ?? collect())->mapWithKeys(function($r){ return [$r->id => ($r->display_name ?? $r->name)]; })) !!};
+        // Expose departments (including their users + roles) for quick client-side viewing
         window.allDepartments = {!! json_encode($departments ?? collect()) !!};
 
     </script>
 
     <script>
-        // Navigation helper used by sidebar nav items. Shows the requested page and marks nav active.
+        // Navigation — updates URL path and active page
         function navigateTo(pageId, el) {
-            try {
-                // Mark nav item active
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                if (el && el.classList) el.classList.add('active');
-
-                // Show the page
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                const target = document.getElementById(pageId);
-                if (target) target.classList.add('active');
-
-                // Scroll to top for better UX
-                window.scrollTo({top:0, behavior:'smooth'});
-                // Persist active page so a refresh keeps the same tab
-                try { localStorage.setItem('dantata.activePage', pageId); } catch (e) {}
-            } catch (e) {
-                console.error('navigateTo error', e);
-            }
+            AppUtils.navigateToPage(pageId, el);
         }
+
+        window.onPageNavigate = function(pageId) {
+            if (pageId === 'staff') loadEmployees();
+            if (typeof ShowcaseModules !== 'undefined') ShowcaseModules.onPageShow(pageId);
+        };
 
         // Modal helpers
         function openTransactionModal() {
@@ -1348,20 +1590,21 @@
         }
 
         // On page load, restore last active page (if any)
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                const saved = localStorage.getItem('dantata.activePage');
-                if (saved) {
-                    // Try to find a nav element whose onclick references the page id
-                    const nav = Array.from(document.querySelectorAll('.nav-item')).find(n => (n.getAttribute('onclick') || '').indexOf(`'${saved}'`) !== -1 || (n.getAttribute('onclick') || '').indexOf(`\"${saved}\"`) !== -1);
-                    navigateTo(saved, nav || null);
-                }
-            } catch (e) { console.error('Failed to restore active page', e); }
-        });
+        // (handled after auth in main DOMContentLoaded below)
 
         function openStaffModal() {
             try {
                 document.getElementById('staffForm')?.reset();
+                window.currentEmployeeEditId = null;
+                const form = document.getElementById('staffForm');
+                if (form) {
+                    const pwd = form.querySelector('[name="password"]');
+                    if (pwd) { pwd.required = true; pwd.placeholder = ''; }
+                    const empId = form.querySelector('[name="employee_id"]');
+                    if (empId) empId.required = false;
+                }
+                const header = document.querySelector('#staffModal .modal-header');
+                if (header) header.textContent = 'Add Employee';
                 document.getElementById('staffModal')?.classList.add('active');
             } catch (e) { console.error('openStaffModal', e); }
         }
@@ -1380,7 +1623,7 @@
                 // ensure the form will POST to create by default (remove method override)
                 const form = document.getElementById('departmentForm');
                 if (form) {
-                    form.action = '/dashboard/departments';
+                    form.action = '/api/departments';
                     // remove hidden _method if present
                     const methodInput = form.querySelector('input[name="_method"]');
                     if (methodInput) methodInput.remove();
@@ -1390,40 +1633,33 @@
 
         async function saveDepartment(e) {
             e.preventDefault();
-            try {
-                const payload = {
-                    name: document.getElementById('deptName').value,
-                    code: document.getElementById('deptCode').value,
-                    description: document.getElementById('deptDescription')?.value || null,
-                    address: document.getElementById('deptAddress')?.value || null,
-                    phone: document.getElementById('deptPhone')?.value || null,
-                    contact_email: document.getElementById('deptEmail')?.value || null,
-                    city: document.getElementById('deptCity')?.value || null,
-                    state: document.getElementById('deptState')?.value || null,
-                    postal_code: document.getElementById('deptPostal')?.value || null,
-                    country: document.getElementById('deptCountry')?.value || null,
-                    extra_info: document.getElementById('deptExtra')?.value || null,
-                };
-
-                let res;
-                if (window.currentDepartmentEditId) {
-                    // Use web routes so session cookie auth works (no page reload)
-                    res = await apiFetch(`/dashboard/departments/${window.currentDepartmentEditId}`, { method: 'PUT', body: payload });
+            const payload = {
+                name: document.getElementById('deptName').value,
+                code: document.getElementById('deptCode').value,
+                description: document.getElementById('deptDescription')?.value || null,
+                address: document.getElementById('deptAddress')?.value || null,
+                phone: document.getElementById('deptPhone')?.value || null,
+                contact_email: document.getElementById('deptEmail')?.value || null,
+                city: document.getElementById('deptCity')?.value || null,
+                state: document.getElementById('deptState')?.value || null,
+                postal_code: document.getElementById('deptPostal')?.value || null,
+                country: document.getElementById('deptCountry')?.value || null,
+                extra_info: document.getElementById('deptExtra')?.value || null,
+            };
+            const isEdit = !!window.currentDepartmentEditId;
+            await handleAction(async () => {
+                if (isEdit) {
+                    await apiFetch(`/api/departments/${window.currentDepartmentEditId}`, { method: 'PUT', body: payload });
                 } else {
-                    res = await apiFetch('/dashboard/departments', { method: 'POST', body: payload });
+                    await apiFetch('/api/departments', { method: 'POST', body: payload });
                 }
-
+                window.currentDepartmentEditId = null;
                 closeModal('departmentCreateModal');
                 await loadAllData();
-                alert('Division saved successfully');
-            } catch (err) {
-                console.error('Failed to save division', err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
-                    if (json && json.message) alert('Failed: ' + json.message);
-                    else alert('Failed to save division');
-                } catch(e) { alert('Failed to save division'); }
-            }
+            }, {
+                successMessage: isEdit ? 'Division updated' : 'Division created',
+                errorMessage: 'Failed to save division',
+            });
         }
 
         function openProductionModal() {
@@ -1457,50 +1693,7 @@
             } catch (e) { console.error('closeModal', e); }
         }
 
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        function apiFetch(path, opts = {}) {
-            const token = window.apiToken || localStorage.getItem('api_token');
-            const headers = Object.assign({
-                'Accept': 'application/json',
-            }, opts.headers || {});
-
-            if (token) {
-                headers['Authorization'] = 'Bearer ' + token;
-            }
-
-            // If sending a body object, ensure JSON header
-            if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
-                headers['Content-Type'] = 'application/json';
-                opts.body = JSON.stringify(opts.body);
-            }
-            // For state-changing requests, include Laravel CSRF token from meta so session-authenticated
-            try {
-                const method = (opts.method || 'GET').toUpperCase();
-                if (method !== 'GET') {
-                    const meta = document.querySelector('meta[name="csrf-token"]');
-                    if (meta) headers['X-CSRF-TOKEN'] = meta.getAttribute('content');
-                }
-            } catch(e) {}
-
-            return fetch(path, Object.assign({
-                // use 'include' to ensure cookies are sent even when using a dev server
-                // or slightly differing origins during local development
-                credentials: 'include',
-                headers
-            }, opts)).then(async res => {
-                if (!res.ok) {
-                    const text = await res.text();
-                    // if unauthorized, clear token
-                    if (res.status === 401) {
-                        localStorage.removeItem('api_token');
-                        window.apiToken = null;
-                    }
-                    throw new Error(`API ${path} returned ${res.status}: ${text}`);
-                }
-                return res.json().then(j => j.data ?? j);
-            });
-        }
+        // apiFetch, showToast, parseApiError, handleAction — provided by app-utils.js
 
         // Load all data in parallel
         async function loadAllData() {
@@ -1516,19 +1709,129 @@
                 ]);
 
                 renderMetrics(metrics || {});
-                renderTransactions(transactions || []);
-                renderInventory(inventory || []);
-                renderDepartments(departments || []);
-                renderProduction(production || []);
+                renderTransactions(normalizeList(transactions));
+                renderInventory(normalizeList(inventory));
+                renderDepartments(normalizeList(departments));
+                renderProduction(normalizeList(production));
                 renderProductionStats(productionStats || {});
-                renderProcesses(processes || []);
+                renderProcesses(normalizeList(processes));
 
                 initChartsWithData(metrics, transactions, inventory, production);
-                // Populate Food Division inventory list
                 loadFoodDivision();
+                loadEmployees();
             } catch (err) {
                 console.error('Failed to load dashboard data', err);
+                showToast(parseApiError(err, 'Failed to load dashboard data'), 'error');
             }
+        }
+
+        async function loadEmployees() {
+            try {
+                const data = await apiFetch('/api/users');
+                renderEmployees(normalizeList(data));
+            } catch (err) {
+                showToast(parseApiError(err, 'Failed to load employees'), 'error');
+            }
+        }
+
+        function renderEmployees(list) {
+            const tbody = document.getElementById('employeesTableBody');
+            if (!tbody) return;
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No employees found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(u => {
+                const name = `${u.first_name || ''} ${u.last_name || ''}`.trim();
+                const role = u.role?.display_name || u.role?.name || '—';
+                const dept = u.department?.name || '—';
+                const active = u.is_active !== false;
+                let actions = `<button class="btn-edit btn-sm" onclick="editEmployee(${u.id})">Edit</button>`;
+                if (active) {
+                    actions += `<button class="btn-delete btn-sm" onclick="deactivateEmployee(${u.id})">Deactivate</button>`;
+                } else {
+                    actions += `<button class="btn-primary btn-sm" onclick="activateEmployee(${u.id})">Activate</button>`;
+                }
+                return `<tr>
+                    <td>${escapeHtml(u.employee_id || '')}</td>
+                    <td>${escapeHtml(name)}</td>
+                    <td>${escapeHtml(u.email || '')}</td>
+                    <td>${escapeHtml(role)}</td>
+                    <td>${escapeHtml(dept)}</td>
+                    <td><span class="status-badge ${active ? 'status-approved' : 'status-rejected'}">${active ? 'Active' : 'Inactive'}</span></td>
+                    <td class="action-btns">${actions}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function editEmployee(id) {
+            await handleAction(async () => {
+                const u = await apiFetch(`/api/users/${id}`);
+                document.getElementById('staffForm')?.reset();
+                const form = document.getElementById('staffForm');
+                if (!form) return;
+                form.querySelector('[name="employee_id"]').value = u.employee_id || '';
+                form.querySelector('[name="first_name"]').value = u.first_name || '';
+                form.querySelector('[name="last_name"]').value = u.last_name || '';
+                form.querySelector('[name="email"]').value = u.email || '';
+                form.querySelector('[name="role_id"]').value = u.role_id || '';
+                form.querySelector('[name="department_id"]').value = u.department_id || '';
+                form.querySelector('[name="password"]').required = false;
+                const hint = document.getElementById('staffPasswordHint');
+                if (hint) hint.textContent = '(leave blank to keep current)';
+                window.currentEmployeeEditId = id;
+                const header = document.querySelector('#staffModal .modal-header');
+                if (header) header.textContent = 'Edit Employee';
+                document.getElementById('staffModal')?.classList.add('active');
+            }, { successMessage: null, errorMessage: 'Failed to load employee' });
+        }
+
+        async function deactivateEmployee(id) {
+            if (!confirm('Deactivate this employee?')) return;
+            await handleAction(async () => {
+                await apiFetch(`/api/users/${id}/deactivate`, { method: 'POST' });
+                await loadEmployees();
+                await loadAllData();
+            }, { successMessage: 'Employee deactivated', errorMessage: 'Failed to deactivate employee' });
+        }
+
+        async function activateEmployee(id) {
+            await handleAction(async () => {
+                await apiFetch(`/api/users/${id}/activate`, { method: 'POST' });
+                await loadEmployees();
+                await loadAllData();
+            }, { successMessage: 'Employee activated', errorMessage: 'Failed to activate employee' });
+        }
+
+        function openAdjustStockModal(id, name, currentQty) {
+            document.getElementById('adjustStockItemId').value = id;
+            document.getElementById('adjustStockItemName').textContent = name || 'Item';
+            document.getElementById('adjustStockCurrent').textContent = Number(currentQty || 0).toLocaleString();
+            document.getElementById('adjustStockForm')?.reset();
+            document.getElementById('adjustStockItemId').value = id;
+            document.getElementById('adjustStockModal')?.classList.add('active');
+        }
+
+        async function saveAdjustStock(e) {
+            e.preventDefault();
+            const id = document.getElementById('adjustStockItemId').value;
+            const payload = {
+                quantity: Number(document.getElementById('adjustStockQty').value),
+                type: document.getElementById('adjustStockType').value,
+                reason: document.getElementById('adjustStockReason').value,
+            };
+            await handleAction(async () => {
+                await apiFetch(`/api/inventory/${id}/adjust`, { method: 'POST', body: payload });
+                closeModal('adjustStockModal');
+                await loadAllData();
+            }, { successMessage: 'Stock adjusted successfully', errorMessage: 'Failed to adjust stock' });
+        }
+
+        async function completeProcess(id) {
+            await handleAction(async () => {
+                await apiFetch(`/api/processes/${id}/complete`, { method: 'POST' });
+                await loadAllData();
+            }, { successMessage: 'Process marked as completed', errorMessage: 'Failed to complete process' });
         }
 
         // Renders a compact combined recent-activity list into the Overview page.
@@ -1573,7 +1876,7 @@
             container.innerHTML = '<ul style="list-style:none;padding-left:0;margin:0;">' + combined.map(it => `
                 <li style="padding:8px 0;border-bottom:1px solid #f0f0f0;">
                     <div style="font-weight:600;color:#1e3a2e;">${escapeHtml(it.type)}: ${escapeHtml(it.title)}</div>
-                    <div style="color:#666;font-size:13px;margin-top:4px;">${escapeHtml(it.summary)} ${it.date ? ' • ' + escapeHtml(it.date.split('T')[0]) : ''}</div>
+                    <div style="color:#666;font-size:13px;margin-top:4px;">${escapeHtml(it.summary)} ${it.date ? ' • <span class="cell-date">' + escapeHtml(formatDate(it.date)) + '</span>' : ''}</div>
                 </li>
             `).join('') + '</ul>';
         }
@@ -1598,7 +1901,7 @@
             if (tr !== null && tr !== undefined) document.getElementById('totalRevenue').textContent = formatCurrency(tr);
             if (te !== null && te !== undefined) document.getElementById('totalExpenses').textContent = formatCurrency(te);
             if (np !== null && np !== undefined) document.getElementById('netProfit').textContent = formatCurrency(np);
-            if (pm !== null && pm !== undefined) document.getElementById('profitMargin').textContent = (pm + '%');
+            if (pm !== null && pm !== undefined) document.getElementById('profitMargin').textContent = Math.round(Number(pm)) + '%';
             if (usersCount !== null && usersCount !== undefined) {
                 const el = document.getElementById('totalEmployees'); if (el) el.textContent = usersCount;
                 const el2 = document.getElementById('overviewTotalUsers'); if (el2) el2.textContent = usersCount;
@@ -1621,9 +1924,13 @@
             }
         }
 
-        function formatCurrency(v) {
-            if (v === null || v === undefined) return '-';
-            return '$' + Number(v).toLocaleString();
+        // formatCurrency, formatDate, formatStatus — provided by app-utils.js
+
+        function normalizeList(data) {
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (data.data && Array.isArray(data.data)) return data.data;
+            return [];
         }
 
         function renderTransactions(list) {
@@ -1631,26 +1938,28 @@
             tbody.innerHTML = (list || []).map(t => {
                 const desc = t.description || t.title || t.name || '-';
                 const amount = t.amount ?? t.total ?? 0;
-                const date = t.transaction_date || t.date || t.created_at || '-';
-                // Build action buttons based on permission flags returned by API
-                // If the API doesn't include permission flags, default to showing
-                // View/Edit so users can inspect and edit items in the UI. Delete
-                // is shown only when the API explicitly allows it (to avoid
-                // exposing a delete button that would 403 immediately).
+                const date = formatDate(t.transaction_date || t.date || t.created_at);
+                const status = (t.status || 'pending').toLowerCase();
                 let actions = '';
                 const canUpdate = (typeof t.can_update === 'undefined') ? true : Boolean(t.can_update);
                 const canView = (typeof t.can_view === 'undefined') ? true : Boolean(t.can_view);
                 const canDelete = (typeof t.can_delete === 'undefined') ? false : Boolean(t.can_delete);
+                const canApprove = Boolean(t.can_approve);
 
-                if (canUpdate) actions += `<button class="btn-edit" onclick="editTransaction(${t.id})">Edit</button>`;
-                if (canView) actions += `<button class="btn-secondary" onclick="viewTransaction(${t.id})">View</button>`;
-                if (canDelete) actions += `<button class="btn-delete" onclick="deleteTransaction(${t.id})">Delete</button>`;
+                if (canUpdate && status === 'pending') actions += `<button class="btn-edit btn-sm" onclick="editTransaction(${t.id})">Edit</button>`;
+                if (canView) actions += `<button class="btn-secondary btn-sm" onclick="viewTransaction(${t.id})">View</button>`;
+                if (canApprove) {
+                    actions += `<button class="btn-primary btn-sm" onclick="approveTransaction(${t.id})">Approve</button>`;
+                    actions += `<button class="btn-delete btn-sm" onclick="rejectTransaction(${t.id})">Reject</button>`;
+                }
+                if (canDelete && status === 'pending') actions += `<button class="btn-delete btn-sm" onclick="deleteTransaction(${t.id})">Delete</button>`;
 
                 return `
                     <tr>
                         <td>${escapeHtml(desc)}</td>
                         <td>${formatCurrency(amount)}</td>
-                        <td>${date}</td>
+                        <td class="cell-date">${date}</td>
+                        <td><span class="status-badge status-${status}">${formatStatus(status)}</span></td>
                         <td class="action-btns">${actions}</td>
                     </tr>
                 `;
@@ -1670,11 +1979,12 @@
                         <td>${Number(i.stock_quantity || 0).toLocaleString()}</td>
                         <td>${Number(i.reorder_level || 0).toLocaleString()}</td>
                         <td>${escapeHtml(i.unit_of_measure || '')}</td>
-                        <td><span class="status-badge ${statusClass}">${escapeHtml(i.status || '')}</span></td>
+                        <td><span class="status-badge ${statusClass}">${formatStatus(i.status)}</span></td>
                         <td class="action-btns">
-                            <button class="btn-edit" onclick="editInventory(${i.id})">Edit</button>
-                            <button class="btn-secondary" onclick="viewInventory(${i.id})">View</button>
-                            <button class="btn-delete" onclick="deleteInventory(${i.id})">Delete</button>
+                            <button class="btn-edit btn-sm" onclick="editInventory(${i.id})">Edit</button>
+                            <button class="btn-secondary btn-sm" onclick="viewInventory(${i.id})">View</button>
+                            <button class="btn-primary btn-sm" onclick="openAdjustStockModal(${i.id}, '${escapeHtml(i.name || '').replace(/'/g, "\\'")}', ${i.stock_quantity || 0})">Adjust</button>
+                            <button class="btn-delete btn-sm" onclick="deleteInventory(${i.id})">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -1694,7 +2004,7 @@
 
             if (totalEl) {
                 // show total monetary value if unit prices available, otherwise show units
-                if (totalValue > 0) totalEl.textContent = '$' + totalValue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                if (totalValue > 0) totalEl.textContent = '₦' + totalValue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
                 else totalEl.textContent = totalUnits.toLocaleString();
             }
             if (currentEl) currentEl.textContent = totalUnits.toLocaleString();
@@ -1727,11 +2037,12 @@
                         <td>${escapeHtml(deptName)}</td>
                         <td>${Number(i.stock_quantity || 0).toLocaleString()}</td>
                         <td>${escapeHtml(i.unit_of_measure || '')}</td>
-                        <td><span class="status-badge ${statusClass}">${escapeHtml(i.status || '')}</span></td>
+                        <td><span class="status-badge ${statusClass}">${formatStatus(i.status)}</span></td>
                         <td class="action-btns">
-                            <button class="btn-edit" onclick="editInventory(${i.id})">Edit</button>
-                            <button class="btn-secondary" onclick="viewInventory(${i.id})">View</button>
-                            <button class="btn-delete" onclick="deleteInventory(${i.id})">Delete</button>
+                            <button class="btn-edit btn-sm" onclick="editInventory(${i.id})">Edit</button>
+                            <button class="btn-secondary btn-sm" onclick="viewInventory(${i.id})">View</button>
+                            <button class="btn-primary btn-sm" onclick="openAdjustStockModal(${i.id}, '${escapeHtml(i.name || '').replace(/'/g, "\\'")}', ${i.stock_quantity || 0})">Adjust</button>
+                            <button class="btn-delete btn-sm" onclick="deleteInventory(${i.id})">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -1786,7 +2097,7 @@
                 const stockEl = document.getElementById('viewInvStock'); if (stockEl) stockEl.textContent = Number(item.stock_quantity ?? item.qty ?? 0).toLocaleString();
                 const reorderEl = document.getElementById('viewInvReorder'); if (reorderEl) reorderEl.textContent = Number(item.reorder_level ?? item.minimum ?? 0).toLocaleString();
                 const unitEl = document.getElementById('viewInvUnit'); if (unitEl) unitEl.textContent = item.unit_of_measure || item.unit || '';
-                const priceEl = document.getElementById('viewInvPrice'); if (priceEl) priceEl.textContent = (item.unit_price !== undefined && item.unit_price !== null) ? '$' + Number(item.unit_price).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
+                const priceEl = document.getElementById('viewInvPrice'); if (priceEl) priceEl.textContent = (item.unit_price !== undefined && item.unit_price !== null) ? '₦' + Number(item.unit_price).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
                 const statusEl = document.getElementById('viewInvStatus'); if (statusEl) statusEl.textContent = item.status || '';
 
                 const mvEl = document.getElementById('viewInvMovements');
@@ -1794,7 +2105,7 @@
                     const movements = item.movements || item.movements_data || [];
                     if (Array.isArray(movements) && movements.length) {
                         mvEl.innerHTML = '<ul style="padding-left:16px;margin:0;">' + movements.map(m => `
-                            <li>${escapeHtml(m.movement_type || m.type || '')} • ${escapeHtml((m.quantity ?? m.qty ?? ''))} • ${(m.date || m.movement_date || '').split('T')[0] || ''}${m.note ? ' • ' + escapeHtml(m.note) : ''}</li>
+                            <li>${escapeHtml(m.movement_type || m.type || '')} • ${escapeHtml((m.quantity ?? m.qty ?? ''))} • <span class="cell-date">${formatDate(m.date || m.movement_date)}</span>${m.note ? ' • ' + escapeHtml(m.note) : ''}</li>
                         `).join('') + '</ul>';
                     } else {
                         mvEl.textContent = 'No movements recorded.';
@@ -1804,25 +2115,16 @@
                 modal.classList.add('active');
             } catch (err) {
                 console.error('Failed to load inventory', err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\\s*/,''));
-                    if (json && json.message) {
-                        alert('Failed to load inventory: ' + json.message);
-                        return;
-                    }
-                } catch (e) {}
-                alert('Failed to load inventory item');
+                showToast(parseApiError(err, 'Failed to load inventory item'), 'error');
             }
         }
 
         async function editInventory(id) {
-            try {
+            await handleAction(async () => {
                 const item = await apiFetch(`/api/inventory/${id}`);
-                // prefill form
-                document.getElementById('inventoryItem') .value = item.name || '';
+                document.getElementById('inventoryItem').value = item.name || '';
                 document.getElementById('inventoryStock').value = item.stock_quantity ?? 0;
                 document.getElementById('inventoryReorder').value = item.reorder_level ?? 0;
-                // optional fields: description, maximum_level, unit_of_measure, unit_price
                 if (document.getElementById('inventoryDescription')) document.getElementById('inventoryDescription').value = item.description || '';
                 if (document.getElementById('inventoryMax')) document.getElementById('inventoryMax').value = item.maximum_level ?? '';
                 if (document.getElementById('inventoryUnit')) document.getElementById('inventoryUnit').value = item.unit_of_measure || '';
@@ -1830,21 +2132,15 @@
                 if (document.getElementById('inventoryStatus')) document.getElementById('inventoryStatus').value = item.status || 'in_stock';
                 if (document.getElementById('inventoryCategory')) document.getElementById('inventoryCategory').value = item.category || '';
                 if (document.getElementById('inventoryDepartment')) document.getElementById('inventoryDepartment').value = item.department_id ?? '';
-
-                // update modal header to editing mode
                 const header = document.querySelector('#inventoryModal .modal-header');
                 if (header) header.textContent = 'Edit Inventory Item';
-
                 window.currentInventoryEditId = id;
                 document.getElementById('inventoryModal')?.classList.add('active');
-            } catch (err) {
-                console.error('Failed to load inventory item', err);
-                alert('Failed to load inventory item');
-            }
+            }, { successMessage: null, errorMessage: 'Failed to load inventory item' });
         }
 
         async function editProduction(id) {
-            try {
+            await handleAction(async () => {
                 const rec = await apiFetch(`/api/production/${id}`);
                 document.getElementById('productionDate').value = rec.production_date ? rec.production_date.split('T')[0] : (rec.production_date || '');
                 document.getElementById('productionQuantity').value = rec.quantity ?? '';
@@ -1855,34 +2151,23 @@
                 window.currentProductionEditId = id;
                 const header = document.querySelector('#productionModal .modal-header'); if (header) header.textContent = 'Edit Production Record';
                 document.getElementById('productionModal')?.classList.add('active');
-            } catch (err) {
-                console.error('Failed to load production record', err);
-                alert('Failed to load production record');
-            }
+            }, { successMessage: null, errorMessage: 'Failed to load production record' });
         }
 
         async function deleteProduction(id) {
             if (!confirm('Delete this production record? This action can be undone.')) return;
-            try {
-                const res = await apiFetch(`/api/production/${id}`, { method: 'DELETE' });
+            await handleAction(async () => {
+                await apiFetch(`/api/production/${id}`, { method: 'DELETE' });
                 await loadAllData();
-                if (res && res.message) alert(res.message);
-            } catch (err) {
-                console.error('Delete production failed', err);
-                alert('Failed to delete production record');
-            }
+            }, { successMessage: 'Production record deleted', errorMessage: 'Failed to delete production record' });
         }
 
         async function deleteInventory(id) {
             if (!confirm('Delete this inventory item? This action can be undone.')) return;
-            try {
-                const res = await apiFetch(`/api/inventory/${id}`, { method: 'DELETE' });
+            await handleAction(async () => {
+                await apiFetch(`/api/inventory/${id}`, { method: 'DELETE' });
                 await loadAllData();
-                if (res && res.message) alert(res.message);
-            } catch (err) {
-                console.error('Delete failed', err);
-                alert('Failed to delete item');
-            }
+            }, { successMessage: 'Inventory item deleted', errorMessage: 'Failed to delete item' });
         }
 
         function renderDepartments(list) {
@@ -1912,7 +2197,7 @@
                                 <td>${usersCount}</td>
                                 <td>${avgAge}</td>
                                 <td>
-                                    <button class="btn-edit" onclick="viewDepartment(${d.id})">View</button>
+                                    <button class="btn-edit btn-sm" onclick="viewDepartment(${d.id})">View</button>
                                 </td>
                             </tr>
                         `;
@@ -1939,9 +2224,9 @@
                                     <td>${escapeHtml(country)}</td>
                                             <td>${usersCount}</td>
                                             <td>
-                                                <button class="btn-edit" onclick="viewDepartment(${d.id})">View Staff</button>
-                                                <button class="btn-secondary" onclick="editDepartment(${d.id})">Edit</button>
-                                                <button class="btn-delete" onclick="deleteDepartment(${d.id})">Delete</button>
+                                                <button class="btn-edit btn-sm" onclick="viewDepartment(${d.id})">View Staff</button>
+                                                <button class="btn-secondary btn-sm" onclick="editDepartment(${d.id})">Edit</button>
+                                                <button class="btn-delete btn-sm" onclick="deleteDepartment(${d.id})">Delete</button>
                                             </td>
                                 </tr>
                             `;
@@ -1954,19 +2239,7 @@
         // back to fetching the department via the API.
         async function viewDepartment(id) {
             try {
-                let dept = null;
-                if (window.allDepartments) {
-                    // allDepartments may be an array or an object map
-                    if (Array.isArray(window.allDepartments)) {
-                        dept = window.allDepartments.find(x => x.id == id);
-                    } else if (window.allDepartments[id]) {
-                        dept = window.allDepartments[id];
-                    }
-                }
-                if (!dept) {
-                    // try API
-                    dept = await apiFetch(`/api/departments/${id}`);
-                }
+                const dept = await apiFetch(`/api/departments/${id}`);
 
                 const header = document.getElementById('departmentModalHeader');
                 const desc = document.getElementById('departmentDescription');
@@ -1974,16 +2247,22 @@
                 if (header) header.textContent = dept.name || 'Department';
                 if (desc) desc.textContent = dept.description || '';
 
-                const users = dept.users || dept.users_data || [];
-                body.innerHTML = (users || []).map(u => {
-                    const role = u.role ? (u.role.display_name || u.role.name) : (u.role_display_name || '');
-                    return `<tr><td style="padding:8px 6px;">${escapeHtml((u.first_name||'') + ' ' + (u.last_name||''))}</td><td style="padding:8px 6px;">${escapeHtml(u.email || '')}</td><td style="padding:8px 6px;">${escapeHtml(role || '')}</td></tr>`;
-                }).join('');
+                const users = Array.isArray(dept.users) ? dept.users : (dept.users?.data || []);
+                if (!users.length) {
+                    body.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#666;">No employees in this department</td></tr>';
+                } else {
+                    body.innerHTML = users.map(u => {
+                        const role = (u.role && (u.role.display_name || u.role.name))
+                            || (u.role_id && window.allRoles ? window.allRoles[u.role_id] : null)
+                            || '—';
+                        return `<tr><td style="padding:8px 6px;">${escapeHtml((u.first_name||'') + ' ' + (u.last_name||''))}</td><td style="padding:8px 6px;">${escapeHtml(u.email || '')}</td><td style="padding:8px 6px;">${escapeHtml(role)}</td></tr>`;
+                    }).join('');
+                }
 
                 document.getElementById('departmentModal')?.classList.add('active');
             } catch (err) {
                 console.error('Failed to load department', err);
-                alert('Failed to load department details');
+                showToast(parseApiError(err, 'Failed to load department details'), 'error');
             }
         }
 
@@ -2010,68 +2289,37 @@
                 const modal = document.getElementById('departmentCreateModal'); if (modal) modal.classList.add('active');
             } catch (err) {
                 console.error('Failed to load department for edit', err);
-                alert('Failed to load division for editing');
+                showToast(parseApiError(err, 'Failed to load division for editing'), 'error');
             }
         }
 
         async function deleteDepartment(id) {
             if (!confirm('Delete this division? This action cannot be undone.')) return;
-            try {
-                // Use the web route so the current session cookie (auth) is applied and CSRF is handled by apiFetch
-                const res = await apiFetch(`/departments/delete/${id}`, { method: 'DELETE' });
+            await handleAction(async () => {
+                await apiFetch(`/api/departments/${id}`, { method: 'DELETE' });
                 await loadAllData();
-                if (res && res.message) alert(res.message);
-                else alert('Division deleted');
-            } catch (err) {
-                console.error('Failed to delete department', err);
-                alert('Failed to delete division - check permissions');
-            }
+            }, { successMessage: 'Division deleted', errorMessage: 'Failed to delete division' });
         }
 
         // Food Division helpers: create or mark an existing department as Food Division
         async function createFoodDivision() {
             if (!confirm('Create a new department named "Food Division"?')) return;
-            try {
-                // Department creation requires a unique code. Generate a sensible default.
-                const code = 'FOOD';
-                // Use web route so session auth + CSRF are applied
-                const res = await apiFetch('/dashboard/departments', { method: 'POST', body: { name: 'Food Division', code: code, description: 'Auto-created Food Division' } });
-                if (res && res.id) {
-                    alert('Food Division created. Reloading...');
-                    window.location.reload();
-                }
-            } catch (err) {
-                console.error('Failed to create department', err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\\s*/,''));
-                    if (json && json.errors) {
-                        const messages = Object.values(json.errors).flat().join('\n');
-                        alert('Failed to create Food Division:\n' + messages);
-                        return;
-                    } else if (json && json.message) {
-                        alert('Failed to create Food Division: ' + json.message);
-                        return;
-                    }
-                } catch (e) {}
-                alert('Failed to create Food Division - check permissions');
-            }
+            await handleAction(async () => {
+                const res = await apiFetch('/api/departments', { method: 'POST', body: { name: 'Food Division', code: 'FOOD', description: 'Auto-created Food Division' } });
+                if (res && res.id) window.location.reload();
+            }, { successMessage: 'Food Division created', errorMessage: 'Failed to create Food Division' });
         }
 
         async function setSelectedAsFood() {
             const sel = document.getElementById('chooseDeptForFood');
-            if (!sel) return alert('No department select found');
+            if (!sel) { showToast('No department select found', 'warning'); return; }
             const id = sel.value;
-            if (!id) return alert('Select a department first');
-            if (!confirm('Rename selected department to "Food Division"? This will change the department name.')) return;
-            try {
-                // Use web route so session auth + CSRF are applied
-                const res = await apiFetch(`/dashboard/departments/${id}`, { method: 'PUT', body: { name: 'Food Division' } });
-                alert('Department renamed. Reloading...');
+            if (!id) { showToast('Select a department first', 'warning'); return; }
+            if (!confirm('Rename selected department to "Food Division"?')) return;
+            await handleAction(async () => {
+                await apiFetch(`/api/departments/${id}`, { method: 'PUT', body: { name: 'Food Division' } });
                 window.location.reload();
-            } catch (err) {
-                console.error('Failed to rename department', err);
-                alert('Failed to rename department - check permissions');
-            }
+            }, { successMessage: 'Department renamed to Food Division', errorMessage: 'Failed to rename department' });
         }
 
         // Roles & Permissions management
@@ -2114,7 +2362,7 @@
                 document.getElementById('selectedRoleTitle').textContent = 'Select a role to edit permissions';
             } catch (err) {
                 console.error('Failed to load roles/permissions', err);
-                alert('Failed to load roles or permissions');
+                showToast(parseApiError(err, 'Failed to load roles or permissions'), 'error');
             }
         }
 
@@ -2186,37 +2434,28 @@
                 }
             } catch (err) {
                 console.error('Failed to load role details', err);
-                alert('Failed to load role details');
+                showToast(parseApiError(err, 'Failed to load role details'), 'error');
             }
         }
 
         async function assignRoleToUser(userId) {
-            if (!selectedRoleId) { alert('Select a role first'); return; }
-            try {
-                const res = await apiFetch(`/api/users/${userId}`, { method: 'PUT', body: { role_id: selectedRoleId } });
-                // update local cache and UI
+            if (!selectedRoleId) { showToast('Select a role first', 'warning'); return; }
+            await handleAction(async () => {
+                await apiFetch(`/api/users/${userId}`, { method: 'PUT', body: { role_id: selectedRoleId } });
                 const u = usersCache.find(x => x.id == userId);
                 if (u) u.role_id = selectedRoleId;
                 await selectRole(selectedRoleId);
-                if (res && res.id) alert('Role assigned to user');
-            } catch (err) {
-                console.error('Failed to assign role', err);
-                alert('Failed to assign role to user');
-            }
+            }, { successMessage: 'Role assigned to user', errorMessage: 'Failed to assign role' });
         }
 
         async function removeRoleFromUser(userId) {
-            if (!selectedRoleId) { alert('Select a role first'); return; }
-            try {
-                const res = await apiFetch(`/api/users/${userId}`, { method: 'PUT', body: { role_id: null } });
+            if (!selectedRoleId) { showToast('Select a role first', 'warning'); return; }
+            await handleAction(async () => {
+                await apiFetch(`/api/users/${userId}`, { method: 'PUT', body: { role_id: null } });
                 const u = usersCache.find(x => x.id == userId);
                 if (u) u.role_id = null;
                 await selectRole(selectedRoleId);
-                if (res && res.id) alert('Role removed from user');
-            } catch (err) {
-                console.error('Failed to remove role', err);
-                alert('Failed to remove role from user');
-            }
+            }, { successMessage: 'Role removed from user', errorMessage: 'Failed to remove role' });
         }
 
         function onPermToggle(cb) {
@@ -2226,8 +2465,8 @@
         }
 
         async function saveRolePermissions() {
-            if (!selectedRoleId) { alert('No role selected'); return; }
-            try {
+            if (!selectedRoleId) { showToast('No role selected', 'warning'); return; }
+            await handleAction(async () => {
                 const container = document.getElementById('permissionsContainer');
                 const checks = container.querySelectorAll('input[type=checkbox][data-perm-id]');
                 const payload = { permissions: [] };
@@ -2239,52 +2478,63 @@
                         payload.permissions.push({ permission_id: Number(pid), access_level: access });
                     }
                 });
-
-                const res = await apiFetch(`/api/roles/${selectedRoleId}/permissions`, { method: 'POST', body: payload });
-                // refresh roles cache and UI
+                await apiFetch(`/api/roles/${selectedRoleId}/permissions`, { method: 'POST', body: payload });
                 await loadRolesAndPermissions();
-                if (res && res.message) alert(res.message);
-            } catch (err) {
-                console.error('Failed to save role permissions', err);
-                alert('Failed to save permissions');
-            }
+            }, { successMessage: 'Permissions saved', errorMessage: 'Failed to save permissions' });
         }
 
         async function createRole() {
-            try {
-                const name = (document.getElementById('newRoleName')?.value || '').trim();
-                if (!name) { alert('Enter a role name'); return; }
-                // Use API to create role - POST /api/roles
-                const res = await apiFetch('/api/roles', { method: 'POST', body: { display_name: name, name: name.toLowerCase().replace(/\s+/g,'_') } });
+            const name = (document.getElementById('newRoleName')?.value || '').trim();
+            if (!name) { showToast('Enter a role name', 'warning'); return; }
+            await handleAction(async () => {
+                const res = await apiFetch('/api/roles', { method: 'POST', body: { display_name: name, name: name.toLowerCase().replace(/\s+/g, '_') } });
                 document.getElementById('newRoleName').value = '';
                 await loadRolesAndPermissions();
                 if (res && res.id) selectRole(res.id);
-            } catch (err) {
-                console.error('Failed to create role', err);
-                alert('Failed to create role');
-            }
+            }, { successMessage: 'Role created', errorMessage: 'Failed to create role' });
         }
 
         function renderProduction(list) {
             const tbody = document.getElementById('productionTableBody');
             tbody.innerHTML = (list || []).map(p => {
-                const date = p.production_date || p.date || p.created_at || '';
-                const qty = Number(p.quantity || p.amount || 0).toLocaleString();
-                const eff = (p.efficiency_percentage ?? p.efficiency ?? p.efficiency_percent) + '%';
-                const downtime = (p.downtime_hours ?? 0) + ' hrs';
+                const date = formatDate(p.production_date || p.date || p.created_at);
+                const qty = Number(p.quantity || p.amount || 0).toLocaleString() + ' L';
+                const eff = Math.round(Number(p.efficiency_percentage ?? p.efficiency ?? p.efficiency_percent ?? 0)) + '%';
+                const downtime = Number(p.downtime_hours ?? 0).toLocaleString() + ' hrs';
+                const status = (p.status || 'pending').toLowerCase();
+                let actions = `<button class="btn-edit btn-sm" onclick="editProduction(${p.id})">Edit</button>
+                        <button class="btn-secondary btn-sm" onclick="viewProduction(${p.id})">View</button>`;
+                if (status === 'pending') {
+                    actions += `<button class="btn-primary btn-sm" onclick="approveProduction(${p.id})">Approve</button>
+                        <button class="btn-delete btn-sm" onclick="rejectProduction(${p.id})">Reject</button>`;
+                }
+                actions += `<button class="btn-delete btn-sm" onclick="deleteProduction(${p.id})">Delete</button>`;
                 return `
                 <tr>
-                    <td>${date}</td>
+                    <td class="cell-date">${date}</td>
                     <td>${qty}</td>
                     <td>${eff}</td>
                     <td>${downtime}</td>
-                    <td class="action-btns">
-                        <button class="btn-edit" onclick="editProduction(${p.id})">Edit</button>
-                        <button class="btn-secondary" onclick="viewProduction(${p.id})">View</button>
-                        <button class="btn-delete" onclick="deleteProduction(${p.id})">Delete</button>
-                    </td>
+                    <td><span class="status-badge status-${status}">${formatStatus(status)}</span></td>
+                    <td class="action-btns">${actions}</td>
                 </tr>
             `}).join('');
+        }
+
+        async function approveProduction(id) {
+            if (!confirm('Approve this production record?')) return;
+            await handleAction(async () => {
+                await apiFetch(`/api/production/${id}/approve`, { method: 'POST' });
+                await loadAllData();
+            }, { successMessage: 'Production record approved', errorMessage: 'Failed to approve production' });
+        }
+
+        async function rejectProduction(id) {
+            if (!confirm('Reject this production record?')) return;
+            await handleAction(async () => {
+                await apiFetch(`/api/production/${id}/reject`, { method: 'POST' });
+                await loadAllData();
+            }, { successMessage: 'Production record rejected', errorMessage: 'Failed to reject production' });
         }
 
         function renderProductionStats(s) {
@@ -2323,22 +2573,31 @@
 
         function renderProcesses(list) {
             const container = document.getElementById('processTableBody');
-            container.innerHTML = (list || []).map(p => {
-                const status = p.status || 'Pending';
-                const statusClass = status === 'Completed' ? 'status-completed' : (status.toLowerCase().includes('progress') ? 'status-progress' : 'status-pending');
-                // Resolve assigned user name: prefer API-provided name, otherwise map by id using window.allUsers
-                const assignedName = p.assigned_to_name || (p.assigned_to ? (window.allUsers && window.allUsers[p.assigned_to] ? window.allUsers[p.assigned_to] : p.assigned_to) : '');
+            if (!container) return;
+            if (!list || !list.length) {
+                container.innerHTML = '<tr><td colspan="5" class="empty-state">No processes found</td></tr>';
+                return;
+            }
+            container.innerHTML = list.map(p => {
+                const rawStatus = (p.status || 'pending').toString();
+                const statusKey = rawStatus.toLowerCase();
+                const statusClass = statusKey === 'completed' ? 'status-completed'
+                    : (statusKey.includes('progress') ? 'status-in_progress' : 'status-pending');
+                const assignedName = p.assigned_to_name || (p.assigned_to && window.allUsers ? window.allUsers[p.assigned_to] : '') || '—';
+                const dueDate = formatDate(p.due_date || p.dueDate);
                 return `
-                    <div class="process-item">
-                        <div>${escapeHtml(p.name || p.title || '')}</div>
-                        <div><span class="status-badge ${statusClass}">${escapeHtml(status)}</span></div>
-                        <div><span class="user-avatar"></span>${escapeHtml(assignedName)}</div>
-                        <div>${escapeHtml(p.due_date || p.dueDate || '')}</div>
-                        <div class="action-btns">
-                            <button class="btn-edit" onclick="editProcess(${p.id})">Edit</button>
-                            <button class="btn-delete" onclick="deleteProcess(${p.id})">Delete</button>
-                        </div>
-                    </div>
+                    <tr>
+                        <td>${escapeHtml(p.name || p.title || '')}</td>
+                        <td><span class="status-badge ${statusClass}">${formatStatus(rawStatus)}</span></td>
+                        <td><span class="user-avatar"></span>${escapeHtml(assignedName)}</td>
+                        <td class="cell-date">${dueDate}</td>
+                        <td class="action-btns">
+                            <button class="btn-secondary btn-sm" onclick="viewProcess(${p.id})">View</button>
+                            <button class="btn-edit btn-sm" onclick="editProcess(${p.id})">Edit</button>
+                            ${statusKey !== 'completed' ? `<button class="btn-primary btn-sm" onclick="completeProcess(${p.id})">Complete</button>` : ''}
+                            <button class="btn-delete btn-sm" onclick="deleteProcess(${p.id})">Delete</button>
+                        </td>
+                    </tr>
                 `;
             }).join('');
         }
@@ -2360,26 +2619,50 @@
                 document.getElementById('processModal')?.classList.add('active');
             } catch (err) {
                 console.error('Failed to load process for edit', err);
-                alert('Failed to load process');
+                showToast(parseApiError(err, 'Failed to load process'), 'error');
             }
+        }
+
+        async function viewProcess(id) {
+            await handleAction(async () => {
+                const p = await apiFetch(`/api/processes/${id}`);
+                let modal = document.getElementById('processViewModal');
+                if (!modal) {
+                    const html = `
+                    <div id="processViewModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">Process Details</div>
+                            <div style="color:#333;display:grid;gap:8px;">
+                                <div><strong>Name:</strong> <span id="viewProcessName"></span></div>
+                                <div><strong>Status:</strong> <span id="viewProcessStatus"></span></div>
+                                <div><strong>Assigned to:</strong> <span id="viewProcessAssigned"></span></div>
+                                <div><strong>Due date:</strong> <span id="viewProcessDue"></span></div>
+                                <div><strong>Description:</strong>
+                                    <div id="viewProcessDesc" style="white-space:pre-wrap;margin-top:4px;color:#555;"></div>
+                                </div>
+                            </div>
+                            <div class="form-actions" style="margin-top:18px;"><button type="button" class="btn-secondary" onclick="closeModal('processViewModal')">Close</button></div>
+                        </div>
+                    </div>`;
+                    document.body.insertAdjacentHTML('beforeend', html);
+                    modal = document.getElementById('processViewModal');
+                }
+                const assignedName = p.assigned_to_name || (p.assigned_to && window.allUsers ? window.allUsers[p.assigned_to] : '') || '—';
+                document.getElementById('viewProcessName').textContent = p.name || p.title || '';
+                document.getElementById('viewProcessStatus').textContent = p.status || '';
+                document.getElementById('viewProcessAssigned').textContent = assignedName;
+                document.getElementById('viewProcessDue').textContent = formatDate(p.due_date || p.dueDate);
+                document.getElementById('viewProcessDesc').textContent = p.description || p.notes || '—';
+                modal.classList.add('active');
+            }, { successMessage: null, errorMessage: 'Failed to load process' });
         }
 
         async function deleteProcess(id) {
             if (!confirm('Delete this process? This action cannot be undone.')) return;
-            try {
-                const res = await apiFetch(`/api/processes/${id}`, { method: 'DELETE' });
+            await handleAction(async () => {
+                await apiFetch(`/api/processes/${id}`, { method: 'DELETE' });
                 await loadAllData();
-                if (res && res.message) alert(res.message);
-            } catch (err) {
-                console.error('Failed to delete process', err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
-                    if (json && json.message) alert('Failed to delete process: ' + json.message);
-                    else alert('Failed to delete process');
-                } catch (e) {
-                    alert('Failed to delete process');
-                }
-            }
+            }, { successMessage: 'Process deleted', errorMessage: 'Failed to delete process' });
         }
 
         // Simple escape to avoid injecting HTML
@@ -2400,17 +2683,22 @@
                 client_name: document.getElementById('transactionClient')?.value || null,
                 notes: document.getElementById('transactionNotes')?.value || null,
             };
-            try {
-                if (window.currentTransactionEditId) {
+            const isEdit = !!window.currentTransactionEditId;
+            await handleAction(async () => {
+                if (isEdit) {
                     await apiFetch(`/api/transactions/${window.currentTransactionEditId}`, { method: 'PUT', body: payload });
                 } else {
-                    await apiFetch('/api/transactions', {method: 'POST', body: payload});
+                    await apiFetch('/api/transactions', { method: 'POST', body: payload });
                 }
                 await loadAllData();
                 closeModal('transactionModal');
                 window.currentTransactionEditId = null;
-                const header = document.querySelector('#transactionModal .modal-header'); if (header) header.textContent = 'Add Transaction';
-            } catch (err) { console.error(err); alert('Failed to save transaction'); }
+                const header = document.querySelector('#transactionModal .modal-header');
+                if (header) header.textContent = 'Add Transaction';
+            }, {
+                successMessage: isEdit ? 'Transaction updated' : 'Transaction created',
+                errorMessage: 'Failed to save transaction',
+            });
         }
 
         // Prefill transaction modal for editing
@@ -2432,7 +2720,7 @@
                 document.getElementById('transactionModal')?.classList.add('active');
             } catch (err) {
                 console.error('Failed to load transaction for edit', err);
-                alert('Failed to load transaction');
+                showToast(parseApiError(err, 'Failed to load transaction'), 'error');
             }
         }
 
@@ -2470,35 +2758,33 @@
                 modal.classList.add('active');
             } catch (err) {
                 console.error('Failed to load transaction', err);
-                // Try to surface API message if available
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
-                    if (json && json.message) {
-                        alert('Failed to load transaction: ' + json.message);
-                        return;
-                    }
-                } catch(e){}
-                alert('Failed to load transaction');
+                showToast(parseApiError(err, 'Failed to load transaction'), 'error');
             }
         }
 
-        // Delete a transaction
+        async function approveTransaction(id) {
+            if (!confirm('Approve this transaction?')) return;
+            await handleAction(async () => {
+                await apiFetch(`/api/transactions/${id}/approve`, { method: 'POST' });
+                await loadAllData();
+            }, { successMessage: 'Transaction approved', errorMessage: 'Failed to approve transaction' });
+        }
+
+        async function rejectTransaction(id) {
+            const reason = prompt('Rejection reason (optional):') || '';
+            if (!confirm('Reject this transaction?')) return;
+            await handleAction(async () => {
+                await apiFetch(`/api/transactions/${id}/reject`, { method: 'POST', body: { reason } });
+                await loadAllData();
+            }, { successMessage: 'Transaction rejected', errorMessage: 'Failed to reject transaction' });
+        }
+
         async function deleteTransaction(id) {
             if (!confirm('Delete this transaction? This action cannot be undone.')) return;
-            try {
-                const res = await apiFetch(`/api/transactions/${id}`, { method: 'DELETE' });
+            await handleAction(async () => {
+                await apiFetch(`/api/transactions/${id}`, { method: 'DELETE' });
                 await loadAllData();
-                if (res && res.message) alert(res.message);
-            } catch (err) {
-                console.error('Failed to delete transaction', err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
-                    if (json && json.message) alert('Failed to delete transaction: ' + json.message);
-                    else alert('Failed to delete transaction');
-                } catch (e) {
-                    alert('Failed to delete transaction');
-                }
-            }
+            }, { successMessage: 'Transaction deleted', errorMessage: 'Failed to delete transaction' });
         }
 
         async function saveInventory(e) {
@@ -2515,74 +2801,58 @@
                 category: document.getElementById('inventoryCategory')?.value || null,
                 department_id: document.getElementById('inventoryDepartment')?.value || null
             };
-
-            try {
-                let res;
-                if (window.currentInventoryEditId) {
-                    res = await apiFetch(`/api/inventory/${window.currentInventoryEditId}`, { method: 'PUT', body: payload });
+            const isEdit = !!window.currentInventoryEditId;
+            await handleAction(async () => {
+                if (isEdit) {
+                    await apiFetch(`/api/inventory/${window.currentInventoryEditId}`, { method: 'PUT', body: payload });
                 } else {
-                    res = await apiFetch('/api/inventory', { method: 'POST', body: payload });
+                    await apiFetch('/api/inventory', { method: 'POST', body: payload });
                 }
-
                 await loadAllData();
                 window.currentInventoryEditId = null;
                 closeModal('inventoryModal');
-
-                // Show success feedback
-                if (res && (res.id || res.message)) {
-                    alert('Inventory saved successfully.');
-                } else {
-                    // fallback
-                    alert('Inventory saved.');
-                }
-            } catch (err) {
-                console.error(err);
-                // err.message contains the API response text (may be JSON). Try to parse it.
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
-                    if (json && json.errors) {
-                        const messages = Object.values(json.errors).flat().join('\n');
-                        alert('Failed to save inventory item:\n' + messages);
-                    } else if (json && json.message) {
-                        alert('Failed to save inventory item: ' + json.message);
-                    } else {
-                        alert('Failed to save inventory item');
-                    }
-                } catch (parseErr) {
-                    alert('Failed to save inventory item: ' + (err.message || err));
-                }
-            }
+            }, {
+                successMessage: isEdit ? 'Inventory item updated' : 'Inventory item created',
+                errorMessage: 'Failed to save inventory item',
+            });
         }
 
         async function saveStaff(e) {
-            // Allow the form to post normally to a non-API web route (we wired
-            // `action="{{ route('dashboard.users.store') }}"` in the Blade form).
-            // Only intercept and send AJAX if the form action targets an API path.
-            const form = document.getElementById('staffForm');
-            if (!form) return true;
-
-            const action = (form.getAttribute('action') || form.action || '').toString();
-            const isApi = action.includes('/api/') || action.startsWith('http') && action.includes('/api/');
-
-            if (!isApi) {
-                // Let the browser submit the form normally to the web route so server
-                // side validation & redirect/flash works (this avoids missing fields
-                // like password_confirmation or hire_date that the API expects).
-                return true; // do not call preventDefault
-            }
-
-            // Otherwise handle via AJAX to the API
             e.preventDefault();
+            const form = document.getElementById('staffForm');
+            if (!form) return;
+
             const fd = new FormData(form);
             const payload = Object.fromEntries(fd.entries());
-            try {
-                await apiFetch('/api/users', {method: 'POST', body: payload});
-                await loadAllData();
-                closeModal('staffModal');
-            } catch (err) {
-                console.error(err);
-                alert('Failed to save employee');
+            const isEdit = !!window.currentEmployeeEditId;
+
+            if (!isEdit) {
+                payload.password_confirmation = payload.password;
+                payload.hire_date = new Date().toISOString().split('T')[0];
+                if (!payload.employee_id) delete payload.employee_id;
+            } else {
+                delete payload.password;
+                delete payload.password_confirmation;
             }
+
+            await handleAction(async () => {
+                if (isEdit) {
+                    await apiFetch(`/api/users/${window.currentEmployeeEditId}`, { method: 'PUT', body: payload });
+                } else {
+                    await apiFetch('/api/users', { method: 'POST', body: payload });
+                }
+                window.currentEmployeeEditId = null;
+                const hint = document.getElementById('staffPasswordHint');
+                if (hint) hint.textContent = '';
+                await loadAllData();
+                await loadEmployees();
+                closeModal('staffModal');
+                const header = document.querySelector('#staffModal .modal-header');
+                if (header) header.textContent = 'Add Employee';
+            }, {
+                successMessage: isEdit ? 'Employee updated' : 'Employee created',
+                errorMessage: 'Failed to save employee',
+            });
         }
 
         async function saveProduction(e) {
@@ -2594,44 +2864,25 @@
                 downtime_hours: Number(document.getElementById('productionDowntime').value || 0),
                 notes: document.getElementById('productionNotes')?.value || null,
             };
-
-            try {
-                let res;
-                if (window.currentProductionEditId) {
-                    res = await apiFetch(`/api/production/${window.currentProductionEditId}`, { method: 'PUT', body: payload });
+            const isEdit = !!window.currentProductionEditId;
+            await handleAction(async () => {
+                if (isEdit) {
+                    await apiFetch(`/api/production/${window.currentProductionEditId}`, { method: 'PUT', body: payload });
                 } else {
-                    res = await apiFetch('/api/production', { method: 'POST', body: payload });
+                    await apiFetch('/api/production', { method: 'POST', body: payload });
                 }
-
                 await loadAllData();
                 window.currentProductionEditId = null;
                 closeModal('productionModal');
-                alert('Production record saved successfully');
-                return res;
-            } catch (err) {
-                console.error(err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\s*/,''));
-                    if (json && json.errors) {
-                        const messages = Object.values(json.errors).flat().join('\n');
-                        alert('Failed to save production:\n' + messages);
-                    } else if (json && json.message) {
-                        alert('Failed to save production: ' + json.message);
-                    } else {
-                        alert('Failed to save production');
-                    }
-                } catch (parseErr) {
-                    alert('Failed to save production: ' + (err.message || err));
-                }
-            }
+            }, {
+                successMessage: isEdit ? 'Production record updated' : 'Production record created',
+                errorMessage: 'Failed to save production',
+            });
         }
 
         async function viewProduction(id) {
-            try {
+            await handleAction(async () => {
                 const p = await apiFetch(`/api/production/${id}`);
-                if (!p) throw new Error('Not found');
-
-                // Create or populate the production view modal
                 let modal = document.getElementById('productionViewModal');
                 if (!modal) {
                     const html = `
@@ -2654,29 +2905,15 @@
                     document.body.insertAdjacentHTML('beforeend', html);
                     modal = document.getElementById('productionViewModal');
                 }
-
-                // Populate fields (use safe fallbacks)
                 const titleEl = document.getElementById('viewProdTitle'); if (titleEl) titleEl.textContent = p.title || `Production ${p.production_date || ''}`;
-                const dateEl = document.getElementById('viewProdDate'); if (dateEl) dateEl.textContent = (p.production_date || p.date || p.created_at || '').split('T')[0] || '';
+                const dateEl = document.getElementById('viewProdDate'); if (dateEl) dateEl.textContent = formatDate(p.production_date || p.date || p.created_at);
                 const qtyEl = document.getElementById('viewProdQuantity'); if (qtyEl) qtyEl.textContent = (p.quantity !== undefined ? Number(p.quantity).toLocaleString() + ' L' : (p.amount !== undefined ? Number(p.amount).toLocaleString() + ' L' : ''));
                 const effEl = document.getElementById('viewProdEfficiency'); if (effEl) effEl.textContent = (p.efficiency_percentage ?? p.efficiency ?? p.efficiency_percent) ? String(p.efficiency_percentage ?? p.efficiency ?? p.efficiency_percent) + '%' : '';
                 const downEl = document.getElementById('viewProdDowntime'); if (downEl) downEl.textContent = (p.downtime_hours !== undefined ? String(p.downtime_hours) + ' hrs' : '');
                 const notesEl = document.getElementById('viewProdNotes'); if (notesEl) notesEl.textContent = p.notes || '';
-
                 modal.classList.add('active');
-            } catch (err) {
-                console.error('Failed to load production', err);
-                try {
-                    const json = JSON.parse(err.message.replace(/^API .*?:\\s*/,''));
-                    if (json && json.message) {
-                        alert('Failed to load production: ' + json.message);
-                        return;
-                    }
-                } catch (e) {}
-                alert('Failed to load production');
-            }
+            }, { successMessage: null, errorMessage: 'Failed to load production' });
         }
-
 
         async function saveProcess(e) {
             e.preventDefault();
@@ -2686,18 +2923,22 @@
                 assigned_to: document.getElementById('processAssigned').value,
                 due_date: document.getElementById('processDueDate').value
             };
-            try {
-                let res;
-                if (window.currentProcessEditId) {
-                    res = await apiFetch(`/api/processes/${window.currentProcessEditId}`, { method: 'PUT', body: payload });
+            const isEdit = !!window.currentProcessEditId;
+            await handleAction(async () => {
+                if (isEdit) {
+                    await apiFetch(`/api/processes/${window.currentProcessEditId}`, { method: 'PUT', body: payload });
                 } else {
-                    res = await apiFetch('/api/processes', {method: 'POST', body: payload});
+                    await apiFetch('/api/processes', { method: 'POST', body: payload });
                 }
                 await loadAllData();
                 closeModal('processModal');
                 window.currentProcessEditId = null;
-                const header = document.querySelector('#processModal .modal-header'); if (header) header.textContent = 'Add Process';
-            } catch (err) { console.error(err); alert('Failed to save process'); }
+                const header = document.querySelector('#processModal .modal-header');
+                if (header) header.textContent = 'Add Process';
+            }, {
+                successMessage: isEdit ? 'Process updated' : 'Process created',
+                errorMessage: 'Failed to save process',
+            });
         }
 
         // Charts initializer that accepts server data (basic wiring)
@@ -2766,10 +3007,14 @@
             const loginBtn = document.getElementById('loginBtn');
             const loggedInArea = document.getElementById('loggedInArea');
             const nameEl = document.getElementById('currentUserName');
+            const avatarEl = document.getElementById('userAvatar');
             if (user) {
                 if (loginBtn) loginBtn.style.display = 'none';
                 if (loggedInArea) loggedInArea.style.display = 'inline-flex';
-                if (nameEl) nameEl.textContent = user.first_name ? `${user.first_name} ${user.last_name}` : (user.name || user.email || 'User');
+                const name = user.first_name ? `${user.first_name} ${user.last_name}` : (user.name || user.email || 'User');
+                if (nameEl) nameEl.textContent = name;
+                if (avatarEl) avatarEl.textContent = (user.first_name?.[0] || user.email?.[0] || 'U').toUpperCase();
+                if (typeof ShowcaseModules !== 'undefined') ShowcaseModules.updateNotificationBadge();
             } else {
                 if (loginBtn) loginBtn.style.display = 'inline-block';
                 if (loggedInArea) loggedInArea.style.display = 'none';
@@ -2782,7 +3027,7 @@
         async function logout(e) {
             if (e) e.preventDefault();
             try {
-                await apiFetch('/api/logout', {method: 'POST'});
+                await apiFetch('/api/logout', { method: 'POST' });
             } catch (err) {
                 console.warn('Logout request failed', err);
             }
@@ -2790,13 +3035,20 @@
             window.apiToken = null;
             window.currentUser = null;
             updateUserArea(null);
-            // Optionally reload data to show public view
-            await loadAllData();
+            showToast('Signed out successfully', 'success');
         }
 
         // Wire form submissions to our handlers (forms still have onsubmit attr; override to be safe)
-        document.addEventListener('DOMContentLoaded', function(){
-            // Override inline handlers
+        document.addEventListener('DOMContentLoaded', function () {
+            AppUtils.initRouter();
+
+            const page = AppUtils.resolveInitialPage();
+            const nav = Array.from(document.querySelectorAll('.nav-item')).find(n => {
+                const onclick = n.getAttribute('onclick') || '';
+                return onclick.includes(`'${page}'`) || onclick.includes(`"${page}"`);
+            });
+            AppUtils.navigateToPage(page, nav || null, true);
+
             const txForm = document.getElementById('transactionForm'); if (txForm) txForm.onsubmit = saveTransaction;
             const invForm = document.getElementById('inventoryForm'); if (invForm) invForm.onsubmit = saveInventory;
             const staffForm = document.getElementById('staffForm'); if (staffForm) staffForm.onsubmit = saveStaff;
@@ -2804,15 +3056,12 @@
             const procForm = document.getElementById('processForm'); if (procForm) procForm.onsubmit = saveProcess;
             const deptForm = document.getElementById('departmentForm'); if (deptForm) deptForm.onsubmit = saveDepartment;
 
-            // Login button should take user to the dedicated login page; logout still calls API.
             const loginBtn = document.getElementById('loginBtn'); if (loginBtn) loginBtn.onclick = () => window.location.href = '/login';
             const logoutBtn = document.getElementById('logoutBtn'); if (logoutBtn) logoutBtn.onclick = async (e) => {
                 await logout(e);
-                // redirect to login page after logout
                 window.location.href = '/login';
             };
 
-            // Check auth first, then load data. If unauthenticated, redirect to the dedicated login page.
             checkAuth().then(authenticated => {
                 if (authenticated) {
                     loadAllData();
@@ -2831,5 +3080,6 @@
             });
         </script>
     @endif
+    <script src="{{ asset('js/showcase-modules.js') }}"></script>
 </body>
 </html>

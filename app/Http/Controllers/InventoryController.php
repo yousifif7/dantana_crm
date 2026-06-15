@@ -6,7 +6,6 @@ use App\Models\InventoryItem;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Log;
 class InventoryController extends Controller
 {
     use AuthorizesRequests;
@@ -68,6 +67,10 @@ class InventoryController extends Controller
     public function show($id)
     {
         $inventoryItem = InventoryItem::find($id);
+        if (!$inventoryItem) {
+            return response()->json(['message' => 'Inventory item not found'], 404);
+        }
+
         return response()->json($inventoryItem->load(['creator', 'department', 'movements.performer']));
     }
 
@@ -85,6 +88,10 @@ class InventoryController extends Controller
         ]);
 
     $inventoryItem = InventoryItem::find($id);
+    if (!$inventoryItem) {
+        return response()->json(['message' => 'Inventory item not found'], 404);
+    }
+
     $oldValues = $inventoryItem->toArray();
     $inventoryItem->update($validated);
     // ensure status recalculation persisted
@@ -135,65 +142,34 @@ class InventoryController extends Controller
         );
     }
 
+    public function movements(InventoryItem $inventoryItem)
+    {
+        return response()->json(
+            $inventoryItem->movements()->with('performer')->latest('movement_date')->paginate(20)
+        );
+    }
+
     public function destroy(Request $request, $id)
     {
         $item = InventoryItem::find($id);
-        $item->forceDelete();
-        // $this->authorize('delete', $inventoryItem);
+        if (!$item) {
+            return response()->json(['message' => 'Inventory item not found'], 404);
+        }
 
-        // $oldValues = $inventoryItem->toArray();
+        $this->authorize('delete', $item);
 
-        // // Support soft delete by default. If client requests permanent deletion
-        // // (e.g. ?force=1) or user is allowed to force delete, perform a forceDelete.
-        // $force = (bool) $request->query('force', false);
+        $oldValues = $item->toArray();
+        $item->delete();
 
-        // if ($force) {
-        //     $inventoryItem->forceDelete();
-        //     $deleted = true;
-        // } else {
-        //     $inventoryItem->delete();
+        $this->auditService->log(
+            $request->user(),
+            'deleted',
+            'inventory',
+            $item,
+            $oldValues,
+            null
+        );
 
-        //     // After delete(), refresh from DB (including trashed) to be sure we observe deleted_at
-        //     $idToCheck = $oldValues['id'] ?? $inventoryItem->id ?? null;
-        //     $fresh = null;
-        //     if ($idToCheck) {
-        //         $fresh = InventoryItem::withTrashed()->find($idToCheck);
-        //         $deleted = $fresh ? (bool) $fresh->trashed() : false;
-        //     } else {
-        //         // log unexpected missing id for debugging
-        //         Log::warning('InventoryController::destroy - no id available on inventory item', ['oldValues' => $oldValues, 'inventoryItem' => $inventoryItem->toArray()]);
-        //         $deleted = false;
-        //     }
-        // }
-
-        // $this->auditService->log(
-        //     $request->user(),
-        //     'deleted',
-        //     'inventory',
-        //     $inventoryItem,
-        //     $oldValues,
-        //     null
-        // );
-
-        // $idToReturn = $oldValues['id'] ?? $inventoryItem->id ?? null;
-
-        // $response = [
-        //     'message' => 'Inventory item deleted successfully',
-        //     'id' => $idToReturn,
-        //     'trashed' => $deleted,
-        //     'force' => $force,
-        //     'deleted_permanently' => $force,
-        // ];
-
-        // // Include debug information when app is in debug mode to help trace why id might be null
-        // if (config('app.debug')) {
-        //     $response['debug'] = [
-        //         'oldValues' => $oldValues,
-        //         'inventoryItem' => $inventoryItem->toArray(),
-        //         'fresh_lookup' => isset($fresh) && $fresh ? $fresh->toArray() : null,
-        //     ];
-        // }
-
-        return response()->json('success');
+        return response()->json(['message' => 'Inventory item deleted successfully', 'id' => $item->id]);
     }
 }

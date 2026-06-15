@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\EscalationCreated;
 use App\Models\Escalation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,8 @@ class EscalationService
 
         // Send notification
         $toUser->notify(new EscalationNotification($escalation));
+
+        event(new EscalationCreated($escalation));
 
         return $escalation;
     }

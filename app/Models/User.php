@@ -65,9 +65,16 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission, string $level = 'view'): bool
     {
+        $levels = match ($level) {
+            'view' => ['view', 'edit', 'approve', 'full'],
+            'edit' => ['edit', 'full'],
+            'approve' => ['approve', 'full'],
+            default => [$level, 'full'],
+        };
+
         return $this->role->permissions()
             ->where('name', $permission)
-            ->where('access_level', $level)
+            ->whereIn('access_level', $levels)
             ->exists();
     }
 

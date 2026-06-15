@@ -85,6 +85,22 @@ class ProcessController extends Controller
         return response()->json(Process::overdue()->with('assignedUser')->get());
     }
 
+    public function complete(Request $request, Process $process)
+    {
+        if ($process->status === 'completed') {
+            return response()->json(['message' => 'Process already completed'], 400);
+        }
+
+        $process->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $this->auditService->log($request->user(), 'completed', 'process', $process);
+
+        return response()->json($process->fresh()->load(['assignedUser', 'creator']));
+    }
+
     /**
      * Delete a process (soft delete).
      */

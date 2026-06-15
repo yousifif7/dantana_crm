@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductionRecord;
 use App\Services\AuditService;
+use App\Events\ProductionRecordCreated;
 use Illuminate\Http\Request;
 
 class ProductionController extends Controller
@@ -43,12 +44,18 @@ class ProductionController extends Controller
 
         $this->auditService->log($request->user(), 'created', 'production', $record);
 
+        event(new ProductionRecordCreated($record));
+
         return response()->json($record, 201);
     }
 
     public function show($id)
     {
         $productionRecord = ProductionRecord::with(['creator', 'approver'])->find($id);
+        if (!$productionRecord) {
+            return response()->json(['message' => 'Production record not found'], 404);
+        }
+
         return response()->json($productionRecord);
     }
 
@@ -62,6 +69,10 @@ class ProductionController extends Controller
             'notes' => 'nullable|string',
         ]);
         $productionRecord = ProductionRecord::find($id);
+        if (!$productionRecord) {
+            return response()->json(['message' => 'Production record not found'], 404);
+        }
+
         $productionRecord->update($validated);
 
         $this->auditService->log($request->user(), 'updated', 'production', $productionRecord);
@@ -71,12 +82,32 @@ class ProductionController extends Controller
 
     public function approve(Request $request, ProductionRecord $productionRecord)
     {
+        if ($productionRecord->status !== 'pending') {
+            return response()->json(['message' => 'Production record already processed'], 400);
+        }
+
         $productionRecord->update([
             'status' => 'approved',
             'approved_by' => $request->user()->id,
         ]);
 
         $this->auditService->log($request->user(), 'approved', 'production', $productionRecord);
+
+        return response()->json($productionRecord);
+    }
+
+    public function reject(Request $request, ProductionRecord $productionRecord)
+    {
+        if ($productionRecord->status !== 'pending') {
+            return response()->json(['message' => 'Production record already processed'], 400);
+        }
+
+        $productionRecord->update([
+            'status' => 'rejected',
+            'approved_by' => $request->user()->id,
+        ]);
+
+        $this->auditService->log($request->user(), 'rejected', 'production', $productionRecord);
 
         return response()->json($productionRecord);
     }
@@ -101,7 +132,11 @@ class ProductionController extends Controller
 
     public function destroy($id){
         $product = ProductionRecord::find($id);
+        if (!$product) {
+            return response()->json(['message' => 'Production record not found'], 404);
+        }
+
         $product->delete();
-        return response()->json('Production deleted successfully!');
+        return response()->json(['message' => 'Production deleted successfully']);
     }
 }

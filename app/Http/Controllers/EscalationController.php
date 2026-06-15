@@ -15,17 +15,21 @@ class EscalationController extends Controller
 
     public function index(Request $request)
     {
+        $user = $request->user();
+        $isAdmin = in_array(strtolower($user->role->name ?? ''), ['md', 'managing_director', 'chairman']);
+
         $query = Escalation::with(['fromUser', 'toUser', 'escalatable']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        // Show escalations that involve the current user
-        $query->where(function ($q) use ($request) {
-            $q->where('from_user_id', $request->user()->id)
-              ->orWhere('to_user_id', $request->user()->id);
-        });
+        if (!$isAdmin) {
+            $query->where(function ($q) use ($request) {
+                $q->where('from_user_id', $request->user()->id)
+                  ->orWhere('to_user_id', $request->user()->id);
+            });
+        }
 
         return EscalationResource::collection(
             $query->latest('escalated_at')->paginate(15)

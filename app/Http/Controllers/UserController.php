@@ -77,10 +77,13 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
-        // Generate temporary password if not provided
-        // $temporaryPassword = $request->password ?? Str::random(12);
-        
+        $temporaryPassword = $request->password;
+        $employeeId = $request->filled('employee_id')
+            ? $request->employee_id
+            : $this->generateEmployeeId();
+
         $user = User::create([
+            'employee_id' => $employeeId,
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
@@ -93,12 +96,6 @@ class UserController extends Controller
             'age' => $request->age,
             'is_active' => true,
         ]);
-
-        // Generate employee ID if not set by model
-        if (empty($user->employee_id)) {
-            $user->employee_id = $this->generateEmployeeId();
-            $user->save();
-        }
 
         $this->auditService->log(
             $request->user(),
@@ -560,10 +557,13 @@ class UserController extends Controller
      */
     private function generateEmployeeId(): string
     {
-        $lastUser = User::latest('id')->first();
-        $lastId = $lastUser ? intval(substr($lastUser->employee_id, 3)) : 0;
-        
-        return 'EMP' . str_pad($lastId + 1, 5, '0', STR_PAD_LEFT);
+        $maxNum = User::withTrashed()
+            ->where('employee_id', 'like', 'EMP%')
+            ->pluck('employee_id')
+            ->map(fn ($id) => (int) substr($id, 3))
+            ->max() ?? 0;
+
+        return 'EMP' . str_pad($maxNum + 1, 5, '0', STR_PAD_LEFT);
     }
 
     /**

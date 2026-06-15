@@ -18,7 +18,8 @@ use App\Http\Controllers\{
     AttendanceController,
     ReportController,
     NotificationController,
-    AuditController
+    AuditController,
+    PurchaseOrderController
 };
 
 // Public routes
@@ -26,7 +27,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 // Protected routes
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     
     // Authentication
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -39,46 +40,46 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
     
-    // Transactions (Finance Module)
-        Route::apiResource('transactions', TransactionController::class);
-        Route::post('/transactions/{transaction}/approve', [TransactionController::class, 'approve']);
-        Route::post('/transactions/{transaction}/reject', [TransactionController::class, 'reject']);
-        Route::get('/transactions/summary/statistics', [TransactionController::class, 'statistics']);
+    // Transactions (Finance Module) — statistics before resource to avoid route conflict
+    Route::get('/transactions/summary/statistics', [TransactionController::class, 'statistics']);
+    Route::apiResource('transactions', TransactionController::class);
+    Route::post('/transactions/{transaction}/approve', [TransactionController::class, 'approve']);
+    Route::post('/transactions/{transaction}/reject', [TransactionController::class, 'reject']);
     
     // Inventory Management
-        Route::apiResource('inventory', InventoryController::class);
-        Route::post('/inventory/{inventoryItem}/adjust', [InventoryController::class, 'adjustStock']);
-        Route::get('/inventory/alerts/low-stock', [InventoryController::class, 'lowStockAlert']);
-        Route::get('/inventory/{inventoryItem}/movements', [InventoryController::class, 'movements']);
+    Route::get('/inventory/alerts/low-stock', [InventoryController::class, 'lowStockAlert']);
+    Route::get('/inventory/{inventoryItem}/movements', [InventoryController::class, 'movements']);
+    Route::apiResource('inventory', InventoryController::class);
+    Route::post('/inventory/{inventoryItem}/adjust', [InventoryController::class, 'adjustStock']);
     
     // Production Management
-        Route::apiResource('production', ProductionController::class);
-        Route::post('/production/{productionRecord}/approve', [ProductionController::class, 'approve']);
-        Route::post('/production/{productionRecord}/reject', [ProductionController::class, 'reject']);
-        Route::get('/production/summary/statistics', [ProductionController::class, 'statistics']);
+    Route::get('/production/summary/statistics', [ProductionController::class, 'statistics']);
+    Route::apiResource('production', ProductionController::class);
+    Route::post('/production/{productionRecord}/approve', [ProductionController::class, 'approve']);
+    Route::post('/production/{productionRecord}/reject', [ProductionController::class, 'reject']);
     
     // Process Management
-    Route::apiResource('processes', ProcessController::class);
     Route::get('/processes/alerts/overdue', [ProcessController::class, 'overdueProcesses']);
     Route::post('/processes/{process}/complete', [ProcessController::class, 'complete']);
+    Route::apiResource('processes', ProcessController::class);
     
     // User Management (HR Module)
-        Route::apiResource('users', UserController::class);
-        Route::post('/users/{user}/activate', [UserController::class, 'activate']);
-        Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate']);
-        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
+    Route::apiResource('users', UserController::class);
+    Route::post('/users/{user}/activate', [UserController::class, 'activate']);
+    Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate']);
+    Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
     
     // Department Management
-        Route::apiResource('departments', DepartmentController::class);
-        Route::get('/departments/{department}/users', [DepartmentController::class, 'users']);
-        Route::get('/departments/{department}/performance', [DepartmentController::class, 'performance']);
+    Route::apiResource('departments', DepartmentController::class);
+    Route::get('/departments/{department}/users', [DepartmentController::class, 'users']);
+    Route::get('/departments/{department}/performance', [DepartmentController::class, 'performance']);
     
     // Attendance
-    Route::apiResource('attendance', AttendanceController::class);
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
     Route::get('/attendance/my-records', [AttendanceController::class, 'myRecords']);
     Route::get('/attendance/department/{department}', [AttendanceController::class, 'departmentAttendance']);
+    Route::apiResource('attendance', AttendanceController::class);
     
     // Reports
     Route::prefix('reports')->group(function () {
@@ -98,20 +99,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     
     // Audit Logs
-        Route::get('/audit-logs', [AuditController::class, 'index']);
-        Route::get('/audit-logs/module/{module}', [AuditController::class, 'byModule']);
-        Route::get('/audit-logs/user/{user}', [AuditController::class, 'byUser']);
-        Route::get('/audit-logs/model/{type}/{id}', [AuditController::class, 'byModel']);
+    Route::get('/audit-logs', [AuditController::class, 'index']);
+    Route::get('/audit-logs/module/{module}', [AuditController::class, 'byModule']);
+    Route::get('/audit-logs/user/{user}', [AuditController::class, 'byUser']);
+    Route::get('/audit-logs/model/{type}/{id}', [AuditController::class, 'byModel']);
     
     // Escalations
     Route::get('/escalations', [EscalationController::class, 'index']);
     Route::get('/escalations/my-pending', [EscalationController::class, 'myPending']);
     Route::post('/escalations/{escalation}/resolve', [EscalationController::class, 'resolve']);
     
+    // Procurement
+    Route::get('/procurement/summary/statistics', [PurchaseOrderController::class, 'statistics']);
+    Route::apiResource('procurement', PurchaseOrderController::class);
+    Route::post('/procurement/{procurement}/approve', [PurchaseOrderController::class, 'approve']);
+    Route::post('/procurement/{procurement}/reject', [PurchaseOrderController::class, 'reject']);
+    Route::post('/procurement/{procurement}/fulfill', [PurchaseOrderController::class, 'fulfill']);
+    
     // Roles & Permissions
-        Route::get('/roles', [RoleController::class, 'index']);
-        Route::post('/roles', [RoleController::class, 'store']);
-        Route::get('/roles/{role}', [RoleController::class, 'show']);
-        Route::get('/permissions', [PermissionController::class, 'index']);
-        Route::post('/roles/{role}/permissions', [RoleController::class, 'syncPermissions']);
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::post('/roles', [RoleController::class, 'store']);
+    Route::get('/roles/{role}', [RoleController::class, 'show']);
+    Route::get('/permissions', [PermissionController::class, 'index']);
+    Route::post('/roles/{role}/permissions', [RoleController::class, 'syncPermissions']);
 });

@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'role' => new RoleResource($this->whenLoaded('role')),
+            'role_id' => $this->role_id,
             'department' => new DepartmentResource($this->whenLoaded('department')),
             'supervisor' => new UserResource($this->whenLoaded('supervisor')),
             'hire_date' => $this->hire_date?->format('Y-m-d'),

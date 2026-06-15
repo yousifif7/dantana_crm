@@ -6,6 +6,7 @@ use App\Models\Transaction;
 use App\Models\InventoryItem;
 use App\Models\ProductionRecord;
 use App\Models\User;
+use App\Models\PurchaseOrder;
 use App\Models\Process;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,9 +14,11 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Role;
 use App\Models\Department;
 use App\Models\User as UserModel;
+use App\Services\AuthService;
 
 class DashboardController extends Controller
 {
+    public function __construct(private AuthService $authService) {}
     public function index(Request $request)
     {
         $user = $request->user();
@@ -56,6 +59,7 @@ class DashboardController extends Controller
 
         // Processes
         $overdueProcesses = Process::overdue()->count();
+        $pendingProcurement = PurchaseOrder::where('status', 'pending')->count();
 
         // Users & Departments
         $totalUsers = User::count();
@@ -77,6 +81,10 @@ class DashboardController extends Controller
             ],
             'processes' => [
                 'overdue' => $overdueProcesses,
+            ],
+            'procurement' => [
+                'pending' => $pendingProcurement,
+                'total_value' => PurchaseOrder::whereIn('status', ['approved', 'fulfilled'])->sum('total_amount'),
             ],
             'counts' => [
                 'users' => $totalUsers,
@@ -217,7 +225,7 @@ class DashboardController extends Controller
 
         try {
             $user = UserModel::create([
-                'employee_id' => $data['employee_id'] ?? null,
+                'employee_id' => $data['employee_id'] ?? $this->authService->generateEmployeeId(),
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => $data['email'],

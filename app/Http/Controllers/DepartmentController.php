@@ -59,7 +59,7 @@ class DepartmentController extends Controller
     public function show(Department $department)
     {
         return new DepartmentResource(
-            $department->load(['generalManager', 'departmentHead', 'users'])
+            $department->load(['generalManager', 'departmentHead', 'users.role'])
         );
     }
 
@@ -85,11 +85,10 @@ class DepartmentController extends Controller
 
     public function destroy(Request $request, Department $department)
     {
-        // Use policy to authorize
         $user = $request->user();
-        // if (! $user || ! $user->can('delete', $department)) {
-        //     return response()->json(['message' => 'Unauthorized'], 403);
-        // }
+        if (!$user || !$user->can('delete', $department)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $oldValues = $department->toArray();
         $department->delete();

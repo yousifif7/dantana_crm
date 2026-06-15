@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Services\AuditService;
 use App\Services\EscalationService;
+use App\Events\{TransactionApproved, TransactionRejected, TransactionCreated};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -54,10 +55,12 @@ class TransactionController extends Controller
                     $t->can_view = true;
                     $t->can_update = true;
                     $t->can_delete = true;
+                    $t->can_approve = $t->status === 'pending';
                 } else {
                     $t->can_view = $user ? $user->can('view', $t) : false;
                     $t->can_update = $user ? $user->can('update', $t) : false;
                     $t->can_delete = $user ? $user->can('delete', $t) : false;
+                    $t->can_approve = $user && $t->status === 'pending' && $user->can('approve', $t);
                 }
 
                 return $t;
@@ -99,6 +102,8 @@ class TransactionController extends Controller
 
             return $transaction;
         });
+
+        event(new TransactionCreated($transaction));
 
         return response()->json($transaction, 201);
     }
@@ -191,12 +196,22 @@ class TransactionController extends Controller
             $transaction
         );
 
+        event(new TransactionApproved($transaction->fresh(), $request->user()));
+
         return response()->json($transaction);
     }
 
     public function reject(Request $request, Transaction $transaction)
     {
         $this->authorize('approve', $transaction);
+
+        if ($transaction->status !== 'pending') {
+            return response()->json(['message' => 'Transaction already processed'], 400);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
 
         $transaction->update([
             'status' => 'rejected',
@@ -211,7 +226,27 @@ class TransactionController extends Controller
             $transaction
         );
 
+        event(new TransactionRejected($transaction->fresh(), $request->user(), $validated['reason'] ?? ''));
+
         return response()->json($transaction);
+    }
+
+    public function statistics(Request $request)
+    {
+        $startDate = $request->input('start_date', now()->subDays(30)->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+
+        $approved = Transaction::where('status', 'approved')
+            ->whereBetween('transaction_date', [$startDate, $endDate]);
+
+        return response()->json([
+            'period' => ['start' => $startDate, 'end' => $endDate],
+            'total_revenue' => (clone $approved)->revenue()->sum('amount'),
+            'total_expenses' => (clone $approved)->expense()->sum('amount'),
+            'pending_count' => Transaction::where('status', 'pending')->count(),
+            'approved_count' => Transaction::where('status', 'approved')->count(),
+            'rejected_count' => Transaction::where('status', 'rejected')->count(),
+        ]);
     }
 
     public function checkEscalation()

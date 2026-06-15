@@ -28,6 +28,8 @@ class DepartmentResource extends JsonResource
                 $this->relationLoaded('users'),
                 $this->users->count()
             ),
+            'users' => UserResource::collection($this->whenLoaded('users')),
+            'users_count' => $this->when(isset($this->users_count), $this->users_count),
             'is_active' => $this->is_active,
         ];
     }
